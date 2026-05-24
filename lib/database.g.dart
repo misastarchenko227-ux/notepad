@@ -315,6 +315,21 @@ class $MessagesTable extends Messages with TableInfo<$MessagesTable, Message> {
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
+  static const VerificationMeta _isFavoriteMeta = const VerificationMeta(
+    'isFavorite',
+  );
+  @override
+  late final GeneratedColumn<bool> isFavorite = GeneratedColumn<bool>(
+    'is_favorite',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_favorite" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -322,6 +337,7 @@ class $MessagesTable extends Messages with TableInfo<$MessagesTable, Message> {
     content,
     isVideo,
     position,
+    isFavorite,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -366,6 +382,12 @@ class $MessagesTable extends Messages with TableInfo<$MessagesTable, Message> {
         position.isAcceptableOrUnknown(data['position']!, _positionMeta),
       );
     }
+    if (data.containsKey('is_favorite')) {
+      context.handle(
+        _isFavoriteMeta,
+        isFavorite.isAcceptableOrUnknown(data['is_favorite']!, _isFavoriteMeta),
+      );
+    }
     return context;
   }
 
@@ -395,6 +417,10 @@ class $MessagesTable extends Messages with TableInfo<$MessagesTable, Message> {
         DriftSqlType.int,
         data['${effectivePrefix}position'],
       )!,
+      isFavorite: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_favorite'],
+      )!,
     );
   }
 
@@ -410,12 +436,14 @@ class Message extends DataClass implements Insertable<Message> {
   final String content;
   final bool isVideo;
   final int position;
+  final bool isFavorite;
   const Message({
     required this.id,
     required this.noteId,
     required this.content,
     required this.isVideo,
     required this.position,
+    required this.isFavorite,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -425,6 +453,7 @@ class Message extends DataClass implements Insertable<Message> {
     map['content'] = Variable<String>(content);
     map['is_video'] = Variable<bool>(isVideo);
     map['position'] = Variable<int>(position);
+    map['is_favorite'] = Variable<bool>(isFavorite);
     return map;
   }
 
@@ -435,6 +464,7 @@ class Message extends DataClass implements Insertable<Message> {
       content: Value(content),
       isVideo: Value(isVideo),
       position: Value(position),
+      isFavorite: Value(isFavorite),
     );
   }
 
@@ -449,6 +479,7 @@ class Message extends DataClass implements Insertable<Message> {
       content: serializer.fromJson<String>(json['content']),
       isVideo: serializer.fromJson<bool>(json['isVideo']),
       position: serializer.fromJson<int>(json['position']),
+      isFavorite: serializer.fromJson<bool>(json['isFavorite']),
     );
   }
   @override
@@ -460,6 +491,7 @@ class Message extends DataClass implements Insertable<Message> {
       'content': serializer.toJson<String>(content),
       'isVideo': serializer.toJson<bool>(isVideo),
       'position': serializer.toJson<int>(position),
+      'isFavorite': serializer.toJson<bool>(isFavorite),
     };
   }
 
@@ -469,12 +501,14 @@ class Message extends DataClass implements Insertable<Message> {
     String? content,
     bool? isVideo,
     int? position,
+    bool? isFavorite,
   }) => Message(
     id: id ?? this.id,
     noteId: noteId ?? this.noteId,
     content: content ?? this.content,
     isVideo: isVideo ?? this.isVideo,
     position: position ?? this.position,
+    isFavorite: isFavorite ?? this.isFavorite,
   );
   Message copyWithCompanion(MessagesCompanion data) {
     return Message(
@@ -483,6 +517,9 @@ class Message extends DataClass implements Insertable<Message> {
       content: data.content.present ? data.content.value : this.content,
       isVideo: data.isVideo.present ? data.isVideo.value : this.isVideo,
       position: data.position.present ? data.position.value : this.position,
+      isFavorite: data.isFavorite.present
+          ? data.isFavorite.value
+          : this.isFavorite,
     );
   }
 
@@ -493,13 +530,15 @@ class Message extends DataClass implements Insertable<Message> {
           ..write('noteId: $noteId, ')
           ..write('content: $content, ')
           ..write('isVideo: $isVideo, ')
-          ..write('position: $position')
+          ..write('position: $position, ')
+          ..write('isFavorite: $isFavorite')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, noteId, content, isVideo, position);
+  int get hashCode =>
+      Object.hash(id, noteId, content, isVideo, position, isFavorite);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -508,7 +547,8 @@ class Message extends DataClass implements Insertable<Message> {
           other.noteId == this.noteId &&
           other.content == this.content &&
           other.isVideo == this.isVideo &&
-          other.position == this.position);
+          other.position == this.position &&
+          other.isFavorite == this.isFavorite);
 }
 
 class MessagesCompanion extends UpdateCompanion<Message> {
@@ -517,12 +557,14 @@ class MessagesCompanion extends UpdateCompanion<Message> {
   final Value<String> content;
   final Value<bool> isVideo;
   final Value<int> position;
+  final Value<bool> isFavorite;
   const MessagesCompanion({
     this.id = const Value.absent(),
     this.noteId = const Value.absent(),
     this.content = const Value.absent(),
     this.isVideo = const Value.absent(),
     this.position = const Value.absent(),
+    this.isFavorite = const Value.absent(),
   });
   MessagesCompanion.insert({
     this.id = const Value.absent(),
@@ -530,6 +572,7 @@ class MessagesCompanion extends UpdateCompanion<Message> {
     required String content,
     this.isVideo = const Value.absent(),
     this.position = const Value.absent(),
+    this.isFavorite = const Value.absent(),
   }) : noteId = Value(noteId),
        content = Value(content);
   static Insertable<Message> custom({
@@ -538,6 +581,7 @@ class MessagesCompanion extends UpdateCompanion<Message> {
     Expression<String>? content,
     Expression<bool>? isVideo,
     Expression<int>? position,
+    Expression<bool>? isFavorite,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -545,6 +589,7 @@ class MessagesCompanion extends UpdateCompanion<Message> {
       if (content != null) 'content': content,
       if (isVideo != null) 'is_video': isVideo,
       if (position != null) 'position': position,
+      if (isFavorite != null) 'is_favorite': isFavorite,
     });
   }
 
@@ -554,6 +599,7 @@ class MessagesCompanion extends UpdateCompanion<Message> {
     Value<String>? content,
     Value<bool>? isVideo,
     Value<int>? position,
+    Value<bool>? isFavorite,
   }) {
     return MessagesCompanion(
       id: id ?? this.id,
@@ -561,6 +607,7 @@ class MessagesCompanion extends UpdateCompanion<Message> {
       content: content ?? this.content,
       isVideo: isVideo ?? this.isVideo,
       position: position ?? this.position,
+      isFavorite: isFavorite ?? this.isFavorite,
     );
   }
 
@@ -582,6 +629,9 @@ class MessagesCompanion extends UpdateCompanion<Message> {
     if (position.present) {
       map['position'] = Variable<int>(position.value);
     }
+    if (isFavorite.present) {
+      map['is_favorite'] = Variable<bool>(isFavorite.value);
+    }
     return map;
   }
 
@@ -592,7 +642,213 @@ class MessagesCompanion extends UpdateCompanion<Message> {
           ..write('noteId: $noteId, ')
           ..write('content: $content, ')
           ..write('isVideo: $isVideo, ')
-          ..write('position: $position')
+          ..write('position: $position, ')
+          ..write('isFavorite: $isFavorite')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $SettingsTable extends Settings with TableInfo<$SettingsTable, Setting> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SettingsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _keyMeta = const VerificationMeta('key');
+  @override
+  late final GeneratedColumn<String> key = GeneratedColumn<String>(
+    'key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _valueMeta = const VerificationMeta('value');
+  @override
+  late final GeneratedColumn<String> value = GeneratedColumn<String>(
+    'value',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [key, value];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'settings';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Setting> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('key')) {
+      context.handle(
+        _keyMeta,
+        key.isAcceptableOrUnknown(data['key']!, _keyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_keyMeta);
+    }
+    if (data.containsKey('value')) {
+      context.handle(
+        _valueMeta,
+        value.isAcceptableOrUnknown(data['value']!, _valueMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_valueMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {key};
+  @override
+  Setting map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Setting(
+      key: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}key'],
+      )!,
+      value: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}value'],
+      )!,
+    );
+  }
+
+  @override
+  $SettingsTable createAlias(String alias) {
+    return $SettingsTable(attachedDatabase, alias);
+  }
+}
+
+class Setting extends DataClass implements Insertable<Setting> {
+  final String key;
+  final String value;
+  const Setting({required this.key, required this.value});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['key'] = Variable<String>(key);
+    map['value'] = Variable<String>(value);
+    return map;
+  }
+
+  SettingsCompanion toCompanion(bool nullToAbsent) {
+    return SettingsCompanion(key: Value(key), value: Value(value));
+  }
+
+  factory Setting.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Setting(
+      key: serializer.fromJson<String>(json['key']),
+      value: serializer.fromJson<String>(json['value']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'key': serializer.toJson<String>(key),
+      'value': serializer.toJson<String>(value),
+    };
+  }
+
+  Setting copyWith({String? key, String? value}) =>
+      Setting(key: key ?? this.key, value: value ?? this.value);
+  Setting copyWithCompanion(SettingsCompanion data) {
+    return Setting(
+      key: data.key.present ? data.key.value : this.key,
+      value: data.value.present ? data.value.value : this.value,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Setting(')
+          ..write('key: $key, ')
+          ..write('value: $value')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(key, value);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Setting && other.key == this.key && other.value == this.value);
+}
+
+class SettingsCompanion extends UpdateCompanion<Setting> {
+  final Value<String> key;
+  final Value<String> value;
+  final Value<int> rowid;
+  const SettingsCompanion({
+    this.key = const Value.absent(),
+    this.value = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SettingsCompanion.insert({
+    required String key,
+    required String value,
+    this.rowid = const Value.absent(),
+  }) : key = Value(key),
+       value = Value(value);
+  static Insertable<Setting> custom({
+    Expression<String>? key,
+    Expression<String>? value,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (key != null) 'key': key,
+      if (value != null) 'value': value,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SettingsCompanion copyWith({
+    Value<String>? key,
+    Value<String>? value,
+    Value<int>? rowid,
+  }) {
+    return SettingsCompanion(
+      key: key ?? this.key,
+      value: value ?? this.value,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (key.present) {
+      map['key'] = Variable<String>(key.value);
+    }
+    if (value.present) {
+      map['value'] = Variable<String>(value.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SettingsCompanion(')
+          ..write('key: $key, ')
+          ..write('value: $value, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -603,11 +859,16 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $NotesTable notes = $NotesTable(this);
   late final $MessagesTable messages = $MessagesTable(this);
+  late final $SettingsTable settings = $SettingsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
-  List<DatabaseSchemaEntity> get allSchemaEntities => [notes, messages];
+  List<DatabaseSchemaEntity> get allSchemaEntities => [
+    notes,
+    messages,
+    settings,
+  ];
 }
 
 typedef $$NotesTableCreateCompanionBuilder =
@@ -766,6 +1027,7 @@ typedef $$MessagesTableCreateCompanionBuilder =
       required String content,
       Value<bool> isVideo,
       Value<int> position,
+      Value<bool> isFavorite,
     });
 typedef $$MessagesTableUpdateCompanionBuilder =
     MessagesCompanion Function({
@@ -774,6 +1036,7 @@ typedef $$MessagesTableUpdateCompanionBuilder =
       Value<String> content,
       Value<bool> isVideo,
       Value<int> position,
+      Value<bool> isFavorite,
     });
 
 class $$MessagesTableFilterComposer
@@ -807,6 +1070,11 @@ class $$MessagesTableFilterComposer
 
   ColumnFilters<int> get position => $composableBuilder(
     column: $table.position,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isFavorite => $composableBuilder(
+    column: $table.isFavorite,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -844,6 +1112,11 @@ class $$MessagesTableOrderingComposer
     column: $table.position,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get isFavorite => $composableBuilder(
+    column: $table.isFavorite,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$MessagesTableAnnotationComposer
@@ -869,6 +1142,11 @@ class $$MessagesTableAnnotationComposer
 
   GeneratedColumn<int> get position =>
       $composableBuilder(column: $table.position, builder: (column) => column);
+
+  GeneratedColumn<bool> get isFavorite => $composableBuilder(
+    column: $table.isFavorite,
+    builder: (column) => column,
+  );
 }
 
 class $$MessagesTableTableManager
@@ -904,12 +1182,14 @@ class $$MessagesTableTableManager
                 Value<String> content = const Value.absent(),
                 Value<bool> isVideo = const Value.absent(),
                 Value<int> position = const Value.absent(),
+                Value<bool> isFavorite = const Value.absent(),
               }) => MessagesCompanion(
                 id: id,
                 noteId: noteId,
                 content: content,
                 isVideo: isVideo,
                 position: position,
+                isFavorite: isFavorite,
               ),
           createCompanionCallback:
               ({
@@ -918,12 +1198,14 @@ class $$MessagesTableTableManager
                 required String content,
                 Value<bool> isVideo = const Value.absent(),
                 Value<int> position = const Value.absent(),
+                Value<bool> isFavorite = const Value.absent(),
               }) => MessagesCompanion.insert(
                 id: id,
                 noteId: noteId,
                 content: content,
                 isVideo: isVideo,
                 position: position,
+                isFavorite: isFavorite,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
@@ -947,6 +1229,139 @@ typedef $$MessagesTableProcessedTableManager =
       Message,
       PrefetchHooks Function()
     >;
+typedef $$SettingsTableCreateCompanionBuilder =
+    SettingsCompanion Function({
+      required String key,
+      required String value,
+      Value<int> rowid,
+    });
+typedef $$SettingsTableUpdateCompanionBuilder =
+    SettingsCompanion Function({
+      Value<String> key,
+      Value<String> value,
+      Value<int> rowid,
+    });
+
+class $$SettingsTableFilterComposer
+    extends Composer<_$AppDatabase, $SettingsTable> {
+  $$SettingsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get key => $composableBuilder(
+    column: $table.key,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get value => $composableBuilder(
+    column: $table.value,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$SettingsTableOrderingComposer
+    extends Composer<_$AppDatabase, $SettingsTable> {
+  $$SettingsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get key => $composableBuilder(
+    column: $table.key,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get value => $composableBuilder(
+    column: $table.value,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$SettingsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SettingsTable> {
+  $$SettingsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get key =>
+      $composableBuilder(column: $table.key, builder: (column) => column);
+
+  GeneratedColumn<String> get value =>
+      $composableBuilder(column: $table.value, builder: (column) => column);
+}
+
+class $$SettingsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SettingsTable,
+          Setting,
+          $$SettingsTableFilterComposer,
+          $$SettingsTableOrderingComposer,
+          $$SettingsTableAnnotationComposer,
+          $$SettingsTableCreateCompanionBuilder,
+          $$SettingsTableUpdateCompanionBuilder,
+          (Setting, BaseReferences<_$AppDatabase, $SettingsTable, Setting>),
+          Setting,
+          PrefetchHooks Function()
+        > {
+  $$SettingsTableTableManager(_$AppDatabase db, $SettingsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SettingsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SettingsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SettingsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> key = const Value.absent(),
+                Value<String> value = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SettingsCompanion(key: key, value: value, rowid: rowid),
+          createCompanionCallback:
+              ({
+                required String key,
+                required String value,
+                Value<int> rowid = const Value.absent(),
+              }) => SettingsCompanion.insert(
+                key: key,
+                value: value,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$SettingsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SettingsTable,
+      Setting,
+      $$SettingsTableFilterComposer,
+      $$SettingsTableOrderingComposer,
+      $$SettingsTableAnnotationComposer,
+      $$SettingsTableCreateCompanionBuilder,
+      $$SettingsTableUpdateCompanionBuilder,
+      (Setting, BaseReferences<_$AppDatabase, $SettingsTable, Setting>),
+      Setting,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -955,4 +1370,6 @@ class $AppDatabaseManager {
       $$NotesTableTableManager(_db, _db.notes);
   $$MessagesTableTableManager get messages =>
       $$MessagesTableTableManager(_db, _db.messages);
+  $$SettingsTableTableManager get settings =>
+      $$SettingsTableTableManager(_db, _db.settings);
 }

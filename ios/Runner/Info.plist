@@ -9,6 +9,8 @@
     <string>Нам нужен доступ к камере, чтобы вы могли делать снимки прямо в приложении.</string>
     <key>NSMicrophoneUsageDescription</key>
     <string>Нам нужен доступ к микрофону для записи звука при съемке видео.</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Нам нужен доступ к микрофону для записи голосовых сообщений.</string>
 
     <key>CADisableMinimumFrameDurationOnPhone</key>
     <true/>
