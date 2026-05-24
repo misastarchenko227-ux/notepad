@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io'; // Обязательно для проверки сети
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart'; // Не забудь добавить в pubspec.yaml
-import 'main.dart'; // Проверь, что MyNotesPage импортирован правильно
 
 // 1. ПОЛНОЭКРАННАЯ РЕКЛАМА (ЗАСТАВКА)
 /*

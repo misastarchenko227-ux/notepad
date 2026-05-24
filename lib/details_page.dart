@@ -1,16 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:video_player/video_player.dart';
-import 'dart:io';
-import 'package:drift/drift.dart' as drift; // Добавлено для работы с Value
 import 'main.dart';
 import 'database.dart';
 import 'package:record/record.dart';
-import 'package:audioplayers/audioplayers.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'ad_screen.dart';
+import 'VideoPreview.dart';
+import 'VoiceMessagePlayer.dart';
+import 'PhotoPreview.dart'; // <--- ДОБАВИЛИ ИМПОРТ НОВОГО КЛАССА
 
 class NoteDetailsScreen extends StatefulWidget {
   final Note note;
@@ -156,15 +154,7 @@ class _NoteDetailsScreenState extends State<NoteDetailsScreen> {
     }
   }
 
-  void openFullScreenImage(String path) {
-    Navigator.push(context, MaterialPageRoute(
-      builder: (context) => Scaffold(
-        backgroundColor: Colors.black,
-        appBar: AppBar(backgroundColor: Colors.transparent, iconTheme: const IconThemeData(color: Colors.white)),
-        body: Center(child: InteractiveViewer(child: Image.file(File(path)))),
-      ),
-    ));
-  }
+  // --- МЕТОД openFullScreenImage УДАЛЕН, ТАК КАК ОН ТЕПЕРЬ ВНУТРИ КЛАССА PhotoPreview ---
 
   Widget _buildMessageContent(Message msg, ColorScheme colorScheme) {
     final parts = msg.content.split('|');
@@ -189,13 +179,15 @@ class _NoteDetailsScreenState extends State<NoteDetailsScreen> {
         if (comment != null) Padding(padding: const EdgeInsets.only(top: 8), child: Text(comment, style: textStyle)),
       ]);
     } else if (isFilePath) {
-      return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        GestureDetector(
-          onTap: () => isSelectionMode ? toggleSelection(msg.id) : openFullScreenImage(path),
-          child: ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.file(File(path), height: 200, width: double.infinity, fit: BoxFit.cover)),
-        ),
-        if (comment != null) Padding(padding: const EdgeInsets.only(top: 8), child: Text(comment, style: textStyle)),
-      ]);
+      // --- ИСПОЛЬЗУЕМ ТВОЙ НОВЫЙ КЛАСС ТУТ ---
+      return PhotoPreview(
+        msgId: msg.id,
+        photoPath: path,
+        comment: comment,
+        isSelectionMode: isSelectionMode,
+        onLongPress: () => toggleSelection(msg.id),
+        onTapInSelection: () => toggleSelection(msg.id),
+      );
     }
     return Text(msg.content, style: textStyle);
   }
@@ -263,7 +255,7 @@ class _NoteDetailsScreenState extends State<NoteDetailsScreen> {
                     return GestureDetector(
                       onLongPress: () => toggleSelection(msg.id),
                       onTap: () => isSelectionMode ? toggleSelection(msg.id) : null,
-                      child: Stack( // Используем Stack, чтобы добавить иконку звезды в углу
+                      child: Stack(
                         children: [
                           AnimatedContainer(
                             duration: const Duration(milliseconds: 200),
@@ -283,7 +275,7 @@ class _NoteDetailsScreenState extends State<NoteDetailsScreen> {
                             ),
                             child: _buildMessageContent(msg, colorScheme),
                           ),
-                          if (msg.isFavorite) // Показываем маленькую звезду, если сообщение в избранном
+                          if (msg.isFavorite)
                             const Positioned(
                               top: 10,
                               right: 20,
@@ -341,254 +333,8 @@ class _NoteDetailsScreenState extends State<NoteDetailsScreen> {
               backgroundColor: colorScheme.primary,
               child: IconButton(icon: const Icon(Icons.send, color: Colors.white), onPressed: sendMessage)
           ),
-
         ],
       ),
-    );
-  }
-}
-
-// --- НОВЫЙ ВИДЖЕТ ДЛЯ ПРОСЛУШИВАНИЯ ГС ---
-class VoiceMessagePlayer extends StatefulWidget {
-  final String path;
-  const VoiceMessagePlayer({super.key, required this.path});
-
-  @override
-  State<VoiceMessagePlayer> createState() => _VoiceMessagePlayerState();
-}
-
-class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
-  late AudioPlayer _player;
-  bool _isPlaying = false;
-  Duration _duration = Duration.zero;
-  Duration _position = Duration.zero;
-
-  @override
-  void initState() {
-    super.initState();
-    _player = AudioPlayer();
-
-    _player.onDurationChanged.listen((d) => setState(() => _duration = d));
-    _player.onPositionChanged.listen((p) => setState(() => _position = p));
-    _player.onPlayerComplete.listen((_) => setState(() => _isPlaying = false));
-  }
-
-  @override
-  void dispose() {
-    _player.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Row(
-      children: [
-        IconButton(
-          icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow),
-          onPressed: () async {
-            if (_isPlaying) {
-              await _player.pause();
-            } else {
-              await _player.play(DeviceFileSource(widget.path));
-            }
-            setState(() => _isPlaying = !_isPlaying);
-          },
-        ),
-        Expanded(
-          child: Slider(
-            value: _position.inMilliseconds.toDouble(),
-            max: _duration.inMilliseconds.toDouble() > 0
-                ? _duration.inMilliseconds.toDouble()
-                : 1.0,
-            onChanged: (value) async {
-              await _player.seek(Duration(milliseconds: value.toInt()));
-            },
-          ),
-        ),
-        Text(
-          "${_position.inMinutes}:${(_position.inSeconds % 60).toString().padLeft(2, '0')}",
-          style: TextStyle(fontSize: 12, color: colorScheme.outline),
-        ),
-      ],
-    );
-  }
-}
-
-// --- ВИДЖЕТ ПЛЕЕРА ВИДЕО (БЕЗ ИЗМЕНЕНИЙ) ---
-class VideoPreview extends StatefulWidget {
-  final int msgId;
-  final String videoPath;
-  final int initialPosition;
-  final bool isFullScreen;
-  final VideoPlayerController? controller;
-
-  const VideoPreview({
-    super.key,
-    required this.msgId,
-    required this.videoPath,
-    this.initialPosition = 0,
-    this.isFullScreen = false,
-    this.controller,
-  });
-
-  @override
-  State<VideoPreview> createState() => _VideoPreviewState();
-}
-
-class _VideoPreviewState extends State<VideoPreview> {
-  late VideoPlayerController _controller;
-  bool _showControls = true;
-  bool _initialized = false;
-
-  @override
-  void initState() {
-    super.initState();
-    if (widget.controller != null) {
-      _controller = widget.controller!;
-      _initialized = true;
-    } else {
-      _controller = VideoPlayerController.file(File(widget.videoPath))
-        ..initialize().then((_) {
-          if (widget.initialPosition > 0) {
-            _controller.seekTo(Duration(seconds: widget.initialPosition));
-          }
-          setState(() => _initialized = true);
-        });
-    }
-
-    if (widget.isFullScreen) {
-      SystemChrome.setPreferredOrientations([DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight]);
-      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-    }
-  }
-
-  void _savePosition() {
-    if (_initialized) {
-      database.updateVideoPosition(widget.msgId, _controller.value.position.inSeconds);
-    }
-  }
-
-  @override
-  void dispose() {
-    _savePosition();
-    if (!widget.isFullScreen && widget.controller == null) {
-      _controller.dispose();
-    }
-    if (widget.isFullScreen) {
-      SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-    }
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (!_initialized) return const Center(child: CircularProgressIndicator());
-
-    if (widget.isFullScreen) {
-      return Scaffold(
-        backgroundColor: Colors.black,
-        body: GestureDetector(
-          onTap: () => setState(() => _showControls = !_showControls),
-          child: Stack(
-            children: [
-              Positioned.fill(
-                child: InteractiveViewer(
-                  clipBehavior: Clip.none,
-                  minScale: 1.0,
-                  maxScale: 5.0,
-                  child: Center(
-                    child: AspectRatio(
-                      aspectRatio: _controller.value.aspectRatio,
-                      child: VideoPlayer(_controller),
-                    ),
-                  ),
-                ),
-              ),
-              if (_showControls) ...[
-                Container(color: Colors.black26),
-                Align(alignment: Alignment.center, child: _buildPlayButton()),
-                Positioned(
-                  top: 20,
-                  left: 20,
-                  child: SafeArea(
-                      child: IconButton(
-                          icon: const Icon(Icons.close, color: Colors.white, size: 35),
-                          onPressed: () => Navigator.pop(context)
-                      )
-                  ),
-                ),
-                Positioned(
-                  bottom: 40,
-                  left: 20,
-                  child: IconButton(
-                      icon: const Icon(Icons.replay, color: Colors.white, size: 30),
-                      onPressed: () => _controller.seekTo(Duration.zero)
-                  ),
-                ),
-                Positioned(
-                  bottom: 20,
-                  left: 20,
-                  right: 20,
-                  child: VideoProgressIndicator(_controller, allowScrubbing: true),
-                ),
-              ]
-            ],
-          ),
-        ),
-      );
-    }
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          AspectRatio(
-            aspectRatio: _controller.value.aspectRatio,
-            child: VideoPlayer(_controller),
-          ),
-          _buildPlayButton(),
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: VideoProgressIndicator(_controller, allowScrubbing: true),
-          ),
-          Positioned(
-            top: 5,
-            right: 5,
-            child: IconButton(
-              icon: const Icon(Icons.fullscreen, color: Colors.white70),
-              onPressed: () {
-                _savePosition();
-                Navigator.push(context, MaterialPageRoute(
-                    builder: (context) => VideoPreview(
-                        msgId: widget.msgId,
-                        videoPath: widget.videoPath,
-                        controller: _controller,
-                        isFullScreen: true
-                    )
-                )).then((_) => setState(() {}));
-              },
-            ),
-          )
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPlayButton() {
-    return IconButton(
-      iconSize: widget.isFullScreen ? 80 : 50,
-      icon: Icon(_controller.value.isPlaying ? Icons.pause : Icons.play_arrow, color: Colors.white.withOpacity(0.8)),
-      onPressed: () {
-        setState(() {
-          _controller.value.isPlaying ? _controller.pause() : _controller.play();
-          _savePosition();
-        });
-      },
     );
   }
 }
