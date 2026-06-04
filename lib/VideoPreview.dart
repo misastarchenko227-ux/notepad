@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:notepad/main.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:video_player/video_player.dart';
 
 // === Видео ===
@@ -34,6 +35,7 @@ class _VideoPreviewState extends State<VideoPreview> {
   @override
   void initState() {
     super.initState();
+
     if (widget.controller != null) {
       _controller = widget.controller!;
       _initialized = true;
@@ -46,10 +48,18 @@ class _VideoPreviewState extends State<VideoPreview> {
           setState(() => _initialized = true);
         });
     }
-
+    _controller.addListener(_handlePlaybackChange);
     if (widget.isFullScreen) {
       SystemChrome.setPreferredOrientations([DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight]);
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    }
+  }
+
+  void _handlePlaybackChange() {
+    if (_controller.value.isPlaying) {
+      WakelockPlus.enable();   // экран не гаснет
+    } else {
+      WakelockPlus.disable();  // экран гаснет как обычно
     }
   }
 
@@ -61,6 +71,9 @@ class _VideoPreviewState extends State<VideoPreview> {
 
   @override
   void dispose() {
+    _controller.removeListener(_handlePlaybackChange);
+    WakelockPlus.disable(); // сбрасываем при выходе
+    _savePosition();
     _savePosition();
     if (!widget.isFullScreen && widget.controller == null) {
       _controller.dispose();
@@ -84,18 +97,8 @@ class _VideoPreviewState extends State<VideoPreview> {
           child: Stack(
             children: [
               Positioned.fill(
-                child: InteractiveViewer(
-                  clipBehavior: Clip.none,
-                  minScale: 1.0,
-                  maxScale: 5.0,
-                  child: Center(
-                    child: AspectRatio(
-                      aspectRatio: _controller.value.aspectRatio,
-                      child: VideoPlayer(_controller),
-                    ),
-                  ),
-                ),
-              ),
+              child: _buildFullScreenVideo(),
+        ),
               if (_showControls) ...[
                 Container(color: Colors.black26),
                 Align(alignment: Alignment.center, child: _buildPlayButton()),
@@ -179,6 +182,25 @@ class _VideoPreviewState extends State<VideoPreview> {
           _savePosition();
         });
       },
+    );
+  }
+  Widget _buildFullScreenVideo() {
+    final screenSize = MediaQuery.of(context).size;
+    final videoRatio = _controller.value.aspectRatio;
+    final screenRatio = screenSize.width / screenSize.height;
+
+    double baseScale = videoRatio < screenRatio
+        ? screenSize.width / (screenSize.height * videoRatio)
+        : screenSize.height * videoRatio / screenSize.width;
+
+    return Transform.scale(
+      scale: baseScale,
+      child: Center(
+        child: AspectRatio(
+          aspectRatio: videoRatio,
+          child: VideoPlayer(_controller),
+        ),
+      ),
     );
   }
 }
