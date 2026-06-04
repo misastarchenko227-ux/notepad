@@ -1,16 +1,11 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:notepad/Data_Base/database.dart';
+import 'package:notepad/Note_Details_Screen.dart';
 import 'package:notepad/Favorites_Screen/Favorites_Screen.dart';
 import 'package:notepad/Run_App/Run_App.dart';
-import 'package:notepad/main.dart';
-import 'package:notepad/saveMessage.dart';
-import 'package:path/path.dart';
-import 'package:provider/provider.dart';
-import 'Data_Base/database.dart';
-import 'details_page.dart';
-import 'saveMessage.dart';
-import 'ad_screen.dart'; // Здесь должен лежать наш MiniBannerAd
-import 'loading_screen.dart';
+import 'package:notepad/ad_screen.dart';
+import 'package:notepad/loading_screen.dart';
 
 late AppDatabase database;
 
@@ -103,7 +98,7 @@ class _MyNotesPageState extends State<MyNotesPage> {
                                 onPressed: () => database.deleteNote(item),
                               ),
                               onTap: () {
-                                Navigator.push(context, MaterialPageRoute(builder: (context) => NoteDetailsScreen(note: item)));
+                                Navigator.push(context, MaterialPageRoute(builder: (context) => NoteDetailsScreen (note: item)));
                               },
                             ),
                           );
