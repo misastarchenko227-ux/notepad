@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:notepad/saveMessage.dart';
 // Фото
 class PhotoPreview extends StatelessWidget {
   final int msgId;
@@ -19,29 +20,7 @@ class PhotoPreview extends StatelessWidget {
     required this.onTapInSelection,
   }) : super(key: key);
 
-  // Метод открытия фото на весь экран
-  void _openFullScreenImage(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => Scaffold(
-          backgroundColor: Colors.black,
-          appBar: AppBar(
-            backgroundColor: Colors.transparent,
-            iconTheme: const IconThemeData(color: Colors.white),
-          ),
-          body: Center(
-            child: InteractiveViewer(
-              clipBehavior: Clip.none,
-              minScale: 1.0,
-              maxScale: 5.0,
-              child: Image.file(File(photoPath)),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -57,7 +36,7 @@ class PhotoPreview extends StatelessWidget {
             if (isSelectionMode) {
               onTapInSelection();
             } else {
-              _openFullScreenImage(context);
+              FullScreenImage(path: photoPath);
             }
           },
           child: ClipRRect(

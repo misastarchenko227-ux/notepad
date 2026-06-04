@@ -3,12 +3,6 @@ import 'package:flutter/material.dart';
 import 'main.dart'; // Проверь, что в main.dart есть класс MyApp или замени на нужный
 import 'ad_screen.dart';
 
-void main() {
-  runApp(const MaterialApp(
-    debugShowCheckedModeBanner: false,
-    home: UnicoreLoadingScreen(),
-  ));
-}
 
 class UnicoreLoadingScreen extends StatefulWidget {
   const UnicoreLoadingScreen({super.key});
