@@ -1,13 +1,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'main.dart';
-import 'Data_Base/database.dart';
-import 'message_item.dart';
 
 
-class FullScreenImage extends StatelessWidget {
+
+class Full_Screen_Image extends StatelessWidget {
   final String path;
-  const FullScreenImage({super.key, required this.path});
+  const Full_Screen_Image({super.key, required this.path});
 
   @override
   Widget build(BuildContext context) {

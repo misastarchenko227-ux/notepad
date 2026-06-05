@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'main.dart'; // Проверь, что в main.dart есть класс MyApp или замени на нужный
-import 'ad_screen.dart';
+import 'package:notepad/Main_Screen/main.dart';
+
 
 
 class UnicoreLoadingScreen extends StatefulWidget {

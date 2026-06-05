@@ -1,10 +1,10 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:notepad/Data_Base/database.dart';
+import 'package:notepad/Favorites_Screen/message_item.dart';
+import 'package:notepad/Main_Functions/Photo/Full_Screen_Image.dart';
+import 'package:notepad/Main_Screen/main.dart';
 
-import 'package:notepad/main.dart';
-import 'package:notepad/message_item.dart';
-import 'package:notepad/saveMessage.dart';
 
 class FavoritesScreen extends StatelessWidget {
   const FavoritesScreen({super.key});
@@ -14,7 +14,7 @@ class FavoritesScreen extends StatelessWidget {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => FullScreenImage(path: path),
+        builder: (context) => Full_Screen_Image(path: path),
       ),
     );
   }

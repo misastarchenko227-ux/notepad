@@ -1,18 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:notepad/Advertisement/ad_screen.dart';
+import 'package:notepad/Input_Panel/Note_Details_Screen.dart';
 import 'package:provider/provider.dart';
 import 'package:notepad/Data_Base/database.dart';
-import 'package:notepad/Note_Details_Screen.dart';
 import 'package:notepad/Favorites_Screen/Favorites_Screen.dart';
 import 'package:notepad/Run_App/Run_App.dart';
-import 'package:notepad/ad_screen.dart';
-import 'package:notepad/loading_screen.dart';
 
 late AppDatabase database;
 
-
-
 class MyNotesPage extends StatefulWidget {
   const MyNotesPage({super.key});
+
   @override
   State<MyNotesPage> createState() => _MyNotesPageState();
 }
@@ -27,7 +25,10 @@ class _MyNotesPageState extends State<MyNotesPage> {
   }
 
   void saveMessage(BuildContext context) {
-    Navigator.push(context, MaterialPageRoute(builder: (context) => const FavoritesScreen()));
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const FavoritesScreen()),
+    );
   }
 
   @override
@@ -39,7 +40,11 @@ class _MyNotesPageState extends State<MyNotesPage> {
         title: const Text('Блокнот'),
         actions: [
           IconButton(
-            icon: Icon(themeSettings.currentMode == ThemeMode.light ? Icons.dark_mode : Icons.light_mode),
+            icon: Icon(
+              themeSettings.currentMode == ThemeMode.light
+                  ? Icons.dark_mode
+                  : Icons.light_mode,
+            ),
             onPressed: () => themeSettings.toggleTheme(),
           ),
         ],
@@ -57,7 +62,10 @@ class _MyNotesPageState extends State<MyNotesPage> {
                       Expanded(
                         child: TextField(
                           controller: _controller,
-                          decoration: const InputDecoration(labelText: 'Текст заметки', border: OutlineInputBorder()),
+                          decoration: const InputDecoration(
+                            labelText: 'Текст заметки',
+                            border: OutlineInputBorder(),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -82,23 +90,37 @@ class _MyNotesPageState extends State<MyNotesPage> {
                   child: StreamBuilder<List<Note>>(
                     stream: database.watchAllNotes(),
                     builder: (context, snapshot) {
-                      if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+                      if (!snapshot.hasData)
+                        return const Center(child: CircularProgressIndicator());
                       final notes = snapshot.data!;
-                      if (notes.isEmpty) return const Center(child: Text('Заметок пока нет'));
+                      if (notes.isEmpty)
+                        return const Center(child: Text('Заметок пока нет'));
                       return ListView.builder(
                         itemCount: notes.length,
                         itemBuilder: (context, index) {
                           final item = notes[index];
                           return Card(
-                            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                            margin: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 4,
+                            ),
                             child: ListTile(
                               title: Text(item.content),
                               trailing: IconButton(
-                                icon: const Icon(Icons.delete_outline, color: Colors.red),
+                                icon: const Icon(
+                                  Icons.delete_outline,
+                                  color: Colors.red,
+                                ),
                                 onPressed: () => database.deleteNote(item),
                               ),
                               onTap: () {
-                                Navigator.push(context, MaterialPageRoute(builder: (context) => NoteDetailsScreen (note: item)));
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        NoteDetailsScreen(note: item),
+                                  ),
+                                );
                               },
                             ),
                           );

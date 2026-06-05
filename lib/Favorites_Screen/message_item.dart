@@ -1,8 +1,9 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:notepad/VideoPreview.dart';
-import 'package:notepad/VoiceMessagePlayer.dart';
-import 'Data_Base/database.dart';
+import 'package:notepad/Main_Functions/VoiceMessagePlayer.dart';
+import 'package:notepad/Main_Functions/video/VideoPreview.dart';
+
+import '../Data_Base/database.dart';
 // message_item.dart (или там, где лежит этот виджет)
 class MessageContentWidget extends StatelessWidget {
   final Message msg;

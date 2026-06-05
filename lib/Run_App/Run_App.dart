@@ -1,19 +1,17 @@
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:notepad/Data_Base/database.dart';
-
-import 'package:notepad/loading_screen.dart';
-import 'package:notepad/main.dart';
+import 'package:notepad/Loading/loading_screen.dart';
+import 'package:notepad/Main_Screen/main.dart';
 import 'package:path/path.dart';
 import 'package:provider/provider.dart';
 
-Future <void> main()async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   database = AppDatabase();
-  try{
+  try {
     await database.select(database.notes).get();
-  } catch(e){
+  } catch (e) {
     ScaffoldMessenger.of(context as BuildContext).showSnackBar(
       SnackBar(
         content: Text("Ошибка БД: $e"),
@@ -26,16 +24,19 @@ Future <void> main()async {
     ChangeNotifierProvider(
       create: (_) => ThemeSettings(),
       child: const MyApp(),
-
     ),
   );
 }
 
-
 class ThemeSettings extends ChangeNotifier {
   bool _isDark = false;
-  ThemeSettings() { _loadFromDb(); }
+
+  ThemeSettings() {
+    _loadFromDb();
+  }
+
   bool get isDark => _isDark;
+
   ThemeMode get currentMode => _isDark ? ThemeMode.dark : ThemeMode.light;
 
   Future<void> _loadFromDb() async {
@@ -49,8 +50,6 @@ class ThemeSettings extends ChangeNotifier {
     notifyListeners();
   }
 }
-
-
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -67,10 +66,7 @@ class MyApp extends StatelessWidget {
         colorSchemeSeed: Colors.blue,
         brightness: Brightness.light,
       ),
-      darkTheme: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.dark,
-      ),
+      darkTheme: ThemeData(useMaterial3: true, brightness: Brightness.dark),
       themeMode: themeSettings.currentMode,
       home: const UnicoreLoadingScreen(),
     );

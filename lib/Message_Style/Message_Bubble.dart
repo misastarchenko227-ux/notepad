@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:notepad/Data_Base/database.dart';
-import 'package:notepad/Message_Content.dart';
+import 'package:notepad/Favorites_Screen/Message_Content.dart';
 
 
-class MessageBubble extends StatelessWidget {
+class Message_Style extends StatelessWidget {
   final Message msg;
   final bool isSelected;
   final bool isSelectionMode;
   final VoidCallback onLongPress;
   final VoidCallback onTap;
 
-  const MessageBubble({
+  const Message_Style({
     super.key,
     required this.msg,
     required this.isSelected,
@@ -45,7 +45,11 @@ class MessageBubble extends StatelessWidget {
                 ),
               ],
             ),
-            child: MessageContent(msg: msg, isSelectionMode: isSelectionMode),
+            child: MessageContent(
+              msg: msg,
+              isSelectionMode: isSelectionMode,
+              onToggleSelection: onLongPress, // ← передаём тот же что у пузыря
+            ),
           ),
           if (msg.isFavorite)
             const Positioned(

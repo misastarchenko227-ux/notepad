@@ -1,4 +1,4 @@
-import 'package:uuid/uuid.dart'; // Рекомендую пакет uuid для генерации ID
+
 
 class ChatMessage {
   final String id;

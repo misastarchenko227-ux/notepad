@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:notepad/saveMessage.dart';
+import 'package:notepad/Main_Functions/Photo/Full_Screen_Image.dart';
 // Фото
 class PhotoPreview extends StatelessWidget {
   final int msgId;
@@ -31,12 +31,15 @@ class PhotoPreview extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         GestureDetector(
-          onLongPress: onLongPress,
+
           onTap: () {
             if (isSelectionMode) {
               onTapInSelection();
             } else {
-              FullScreenImage(path: photoPath);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => Full_Screen_Image(path: photoPath)),
+              );
             }
           },
           child: ClipRRect(

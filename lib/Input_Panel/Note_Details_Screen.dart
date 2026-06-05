@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:notepad/Input_Panel/Note_Details_Controller.dart';
 import 'Message_List.dart';
 
-import 'Data_Base/database.dart';
-import 'Note_Details_Controller.dart';
+import '../Data_Base/database.dart';
 import 'Input_Panel.dart';
 // только сам экран, без виджетов:
 class NoteDetailsScreen extends StatefulWidget {

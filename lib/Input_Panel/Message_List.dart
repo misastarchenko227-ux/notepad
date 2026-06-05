@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:notepad/Data_Base/database.dart';
-import 'package:notepad/Message_Bubble.dart';
-import 'package:notepad/main.dart';
-import 'Note_Details_Controller.dart';
+import 'package:notepad/Input_Panel/Note_Details_Controller.dart';
+import 'package:notepad/Main_Screen/main.dart';
+import 'package:notepad/Message_Style/Message_Bubble.dart';
 class MessageList extends StatelessWidget {
   final NoteDetailsController controller;
   final int noteId;
@@ -30,7 +30,7 @@ class MessageList extends StatelessWidget {
           itemCount: controller.currentMessages.length,
           itemBuilder: (context, index) {
             final msg = controller.currentMessages[index];
-            return MessageBubble(
+            return Message_Style(
               msg: msg,
               isSelected: controller.selectedMessageIds.contains(msg.id),
               isSelectionMode: controller.isSelectionMode,

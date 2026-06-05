@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-
-import 'Note_Details_Controller.dart';
+import 'package:notepad/Input_Panel/Note_Details_Controller.dart';
 
 class InputPanel extends StatelessWidget {
   final NoteDetailsController controller;
