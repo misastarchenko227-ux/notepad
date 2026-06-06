@@ -46,8 +46,10 @@ class MessageContent extends StatelessWidget {
             videoPath: path,
             initialPosition: msg.position,
             isFullScreen: false,
-            allMediaPaths: mediaPaths, // Добавлено
-            currentIndex: mediaIndex,   // Добавлено
+            allMediaPaths: mediaPaths,
+            currentIndex: mediaIndex,
+            isSelectionMode: isSelectionMode,
+            onTapInSelection: onToggleSelection,
           ),
           if (comment != null)
             Padding(
@@ -59,8 +61,9 @@ class MessageContent extends StatelessWidget {
     }
 
     // Фото
-    if (path.endsWith('.jpg') || path.endsWith('.jpeg') ||
-        path.endsWith('.png') || path.endsWith('.webp')) {
+    final p = path.toLowerCase();
+    if (p.endsWith('.jpg') || p.endsWith('.jpeg') ||
+        p.endsWith('.png') || p.endsWith('.webp')) {
 
       // Если есть mediaPaths — мы в заметке, используем PhotoPreview
       if (mediaPaths != null && mediaIndex != null) {
@@ -70,7 +73,7 @@ class MessageContent extends StatelessWidget {
           comment: comment,
           isSelectionMode: isSelectionMode,
           onLongPress: () {},
-          onTapInSelection: () {},
+          onTapInSelection: onToggleSelection ?? () {},
           allMediaPaths: mediaPaths!,
           currentIndex: mediaIndex!,
         );
@@ -89,6 +92,12 @@ class MessageContent extends StatelessWidget {
                 height: 200,
                 width: double.infinity,
                 fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  height: 200,
+                  width: double.infinity,
+                  color: colorScheme.surfaceVariant,
+                  child: const Icon(Icons.broken_image),
+                ),
               ),
             ),
           ),

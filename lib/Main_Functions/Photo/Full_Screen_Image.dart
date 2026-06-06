@@ -33,8 +33,10 @@ class _Full_Screen_ImageState extends State<Full_Screen_Image> {
     super.dispose();
   }
 
-  bool _isVideo(String path) =>
-      path.endsWith('.mp4') || path.endsWith('.mov') || path.endsWith('.avi');
+  bool _isVideo(String path) {
+    final p = path.toLowerCase();
+    return p.endsWith('.mp4') || p.endsWith('.mov') || p.endsWith('.avi') || p.endsWith('.mkv');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,7 +53,7 @@ class _Full_Screen_ImageState extends State<Full_Screen_Image> {
       ),
       body: PageView.builder(
         controller: _pageController,
-        physics: const ClampingScrollPhysics(),
+        physics: const BouncingScrollPhysics(),
         itemCount: widget.paths.length,
         onPageChanged: (index) => setState(() => _currentIndex = index),
         itemBuilder: (context, index) {
@@ -63,17 +65,23 @@ class _Full_Screen_ImageState extends State<Full_Screen_Image> {
                 msgId: 0,
                 videoPath: path,
                 isFullScreen: false,
-                // Не передаем allMediaPaths здесь, чтобы не было зацикливания галереи
+                // Не передаем allMediaPaths здесь, чтобы избежать рекурсии при тапе внутри галереи
               ),
             );
           }
 
           return InteractiveViewer(
-            panEnabled: false,
             minScale: 1.0,
-            maxScale: 4.0,
+            maxScale: 5.0,
             child: Center(
-              child: Image.file(File(path)),
+              child: Image.file(
+                File(path),
+                errorBuilder: (context, error, stackTrace) => const Icon(
+                  Icons.broken_image,
+                  color: Colors.white54,
+                  size: 50,
+                ),
+              ),
             ),
           );
         },

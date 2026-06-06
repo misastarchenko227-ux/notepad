@@ -15,6 +15,8 @@ class VideoPreview extends StatefulWidget {
   final bool isFullScreen;
   final List<String>? allMediaPaths;
   final int? currentIndex;
+  final bool isSelectionMode;
+  final VoidCallback? onTapInSelection;
 
   const VideoPreview({
     Key? key,
@@ -25,6 +27,8 @@ class VideoPreview extends StatefulWidget {
     this.isFullScreen = false,
     this.allMediaPaths,
     this.currentIndex,
+    this.isSelectionMode = false,
+    this.onTapInSelection,
   }) : super(key: key);
 
   @override
@@ -51,7 +55,7 @@ class _VideoPreviewState extends State<VideoPreview> {
           if (widget.initialPosition > 0) {
             _controller.seekTo(Duration(seconds: widget.initialPosition));
           }
-          setState(() => _initialized = true);
+          if (mounted) setState(() => _initialized = true);
         });
     }
     _controller.addListener(_handlePlaybackChange);
@@ -84,7 +88,7 @@ class _VideoPreviewState extends State<VideoPreview> {
   }
 
   void _savePosition() {
-    if (_initialized) {
+    if (_initialized && widget.msgId != 0) {
       database.updateVideoPosition(widget.msgId, _controller.value.position.inSeconds);
     }
   }
@@ -146,8 +150,11 @@ class _VideoPreviewState extends State<VideoPreview> {
         children: [
           GestureDetector(
             onTap: () {
-              if (widget.allMediaPaths != null && widget.currentIndex != null) {
+              if (widget.isSelectionMode) {
+                widget.onTapInSelection?.call();
+              } else if (widget.allMediaPaths != null && widget.currentIndex != null) {
                 _savePosition();
+                _controller.pause(); // Исправление: останавливаем видео перед переходом
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -164,53 +171,56 @@ class _VideoPreviewState extends State<VideoPreview> {
               child: VideoPlayer(_controller),
             ),
           ),
-          IconButton(
-            iconSize: 50,
-            icon: Icon(
-              _controller.value.isPlaying ? Icons.pause : Icons.play_arrow,
-              color: Colors.white.withOpacity(0.8),
+          if (!widget.isSelectionMode)
+            IconButton(
+              iconSize: 50,
+              icon: Icon(
+                _controller.value.isPlaying ? Icons.pause : Icons.play_arrow,
+                color: Colors.white.withOpacity(0.8),
+              ),
+              onPressed: () => setState(() {
+                _controller.value.isPlaying ? _controller.pause() : _controller.play();
+                _savePosition();
+              }),
             ),
-            onPressed: () => setState(() {
-              _controller.value.isPlaying ? _controller.pause() : _controller.play();
-              _savePosition();
-            }),
-          ),
           Positioned(
             bottom: 0, left: 0, right: 0,
             child: VideoProgressIndicator(_controller, allowScrubbing: false),
           ),
-          Positioned(
-            top: 5, right: 5,
-            child: IconButton(
-              icon: const Icon(Icons.fullscreen, color: Colors.white70),
-              onPressed: () {
-                _savePosition();
-                if (widget.allMediaPaths != null && widget.currentIndex != null) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => Full_Screen_Image(
-                        paths: widget.allMediaPaths!,
-                        initialIndex: widget.currentIndex!,
+          if (!widget.isSelectionMode)
+            Positioned(
+              top: 5, right: 5,
+              child: IconButton(
+                icon: const Icon(Icons.fullscreen, color: Colors.white70),
+                onPressed: () {
+                  _savePosition();
+                  _controller.pause(); // Исправление: останавливаем видео перед переходом
+                  if (widget.allMediaPaths != null && widget.currentIndex != null) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => Full_Screen_Image(
+                          paths: widget.allMediaPaths!,
+                          initialIndex: widget.currentIndex!,
+                        ),
                       ),
-                    ),
-                  ).then((_) => setState(() {}));
-                } else {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => VideoPreview(
-                        msgId: widget.msgId,
-                        videoPath: widget.videoPath,
-                        controller: _controller,
-                        isFullScreen: true,
+                    ).then((_) => setState(() {}));
+                  } else {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => VideoPreview(
+                          msgId: widget.msgId,
+                          videoPath: widget.videoPath,
+                          controller: _controller,
+                          isFullScreen: true,
+                        ),
                       ),
-                    ),
-                  ).then((_) => setState(() {}));
-                }
-              },
+                    ).then((_) => setState(() {}));
+                  }
+                },
+              ),
             ),
-          ),
         ],
       ),
     );
