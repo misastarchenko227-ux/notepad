@@ -5,21 +5,16 @@ import 'package:notepad/Favorites_Screen/Message_Content.dart';
 import 'package:notepad/Main_Functions/Photo/Full_Screen_Image.dart';
 import 'package:notepad/Main_Screen/main.dart';
 
-
 class FavoritesScreen extends StatelessWidget {
   const FavoritesScreen({super.key});
 
-  void _openImage(BuildContext context, String fullContent) {
-    final String path = fullContent.split('|')[0];
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => Full_Screen_Image(
-          paths: [path],     // ← только одно фото, без скролла
-          initialIndex: 0,
-        ),
-      ),
-    );
+  bool _isMedia(Message msg) {
+    if (msg.isVideo) return true;
+    final path = msg.content.split('|')[0].toLowerCase();
+    return path.endsWith('.jpg') ||
+        path.endsWith('.jpeg') ||
+        path.endsWith('.png') ||
+        path.endsWith('.webp');
   }
 
   @override
@@ -49,6 +44,12 @@ class FavoritesScreen extends StatelessWidget {
             );
           }
 
+          // Собираем все пути к медиафайлам из текущего списка избранного
+          final mediaMessages = items.where((item) => _isMedia(item.message)).toList();
+          final allMediaPaths = mediaMessages
+              .map((item) => item.message.content.split('|')[0])
+              .toList();
+
           return ListView.builder(
             padding: const EdgeInsets.all(12),
             itemCount: items.length,
@@ -56,6 +57,12 @@ class FavoritesScreen extends StatelessWidget {
               final item = items[index];
               final msg = item.message;
               final note = item.note;
+
+              // Находим индекс текущего сообщения в общем списке медиа
+              int? mediaIndex;
+              if (_isMedia(msg)) {
+                mediaIndex = mediaMessages.indexOf(item);
+              }
 
               return Container(
                 margin: const EdgeInsets.only(bottom: 12),
@@ -76,7 +83,21 @@ class FavoritesScreen extends StatelessWidget {
                   children: [
                     MessageContent(
                       msg: msg,
-                      onImageTap: () => _openImage(context, msg.content),
+                      mediaPaths: allMediaPaths,
+                      mediaIndex: mediaIndex,
+                      onImageTap: () {
+                        if (mediaIndex != null) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => Full_Screen_Image(
+                                paths: allMediaPaths,
+                                initialIndex: mediaIndex!,
+                              ),
+                            ),
+                          );
+                        }
+                      },
                     ),
                     const SizedBox(height: 8),
                     const Divider(height: 1),
@@ -95,16 +116,12 @@ class FavoritesScreen extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        // ЗАМЕНА: Теперь это IconButton, чтобы можно было нажать
                         IconButton(
-                          constraints: const BoxConstraints(), // Убираем лишние отступы
+                          constraints: const BoxConstraints(),
                           padding: EdgeInsets.zero,
                           icon: const Icon(Icons.star, color: Colors.amber, size: 22),
                           onPressed: () async {
-                            // Вызываем метод переключения избранного из database.dart
                             await database.toggleFavorite(msg);
-
-                            // Опционально: показать небольшое уведомление
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(

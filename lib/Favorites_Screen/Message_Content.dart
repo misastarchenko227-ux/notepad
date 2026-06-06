@@ -46,6 +46,8 @@ class MessageContent extends StatelessWidget {
             videoPath: path,
             initialPosition: msg.position,
             isFullScreen: false,
+            allMediaPaths: mediaPaths, // Добавлено
+            currentIndex: mediaIndex,   // Добавлено
           ),
           if (comment != null)
             Padding(

@@ -42,6 +42,7 @@ class _Full_Screen_ImageState extends State<Full_Screen_Image> {
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
+        elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
         title: Text(
           '${_currentIndex + 1} / ${widget.paths.length}',
@@ -50,23 +51,25 @@ class _Full_Screen_ImageState extends State<Full_Screen_Image> {
       ),
       body: PageView.builder(
         controller: _pageController,
-        physics: const ClampingScrollPhysics(), // ← добавь
+        physics: const ClampingScrollPhysics(),
         itemCount: widget.paths.length,
         onPageChanged: (index) => setState(() => _currentIndex = index),
         itemBuilder: (context, index) {
           final path = widget.paths[index];
 
           if (_isVideo(path)) {
-            return VideoPreview(
-              msgId: 0,
-              videoPath: path,
-              isFullScreen: false,
+            return Center(
+              child: VideoPreview(
+                msgId: 0,
+                videoPath: path,
+                isFullScreen: false,
+                // Не передаем allMediaPaths здесь, чтобы не было зацикливания галереи
+              ),
             );
           }
 
-          // Фото — ограничиваем зум чтобы не мешал листанию
           return InteractiveViewer(
-            panEnabled: false,  // ← запрещаем перемещение
+            panEnabled: false,
             minScale: 1.0,
             maxScale: 4.0,
             child: Center(

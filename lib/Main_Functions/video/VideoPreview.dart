@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:notepad/Main_Functions/Photo/Full_Screen_Image.dart';
 import 'package:notepad/Main_Functions/video/Video_Fullscreen_View.dart';
 import 'package:notepad/Main_Screen/main.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
@@ -12,6 +13,8 @@ class VideoPreview extends StatefulWidget {
   final int initialPosition;
   final VideoPlayerController? controller;
   final bool isFullScreen;
+  final List<String>? allMediaPaths;
+  final int? currentIndex;
 
   const VideoPreview({
     Key? key,
@@ -20,6 +23,8 @@ class VideoPreview extends StatefulWidget {
     this.initialPosition = 0,
     this.controller,
     this.isFullScreen = false,
+    this.allMediaPaths,
+    this.currentIndex,
   }) : super(key: key);
 
   @override
@@ -139,9 +144,25 @@ class _VideoPreviewState extends State<VideoPreview> {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          AspectRatio(
-            aspectRatio: _controller.value.aspectRatio,
-            child: VideoPlayer(_controller),
+          GestureDetector(
+            onTap: () {
+              if (widget.allMediaPaths != null && widget.currentIndex != null) {
+                _savePosition();
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => Full_Screen_Image(
+                      paths: widget.allMediaPaths!,
+                      initialIndex: widget.currentIndex!,
+                    ),
+                  ),
+                ).then((_) => setState(() {}));
+              }
+            },
+            child: AspectRatio(
+              aspectRatio: _controller.value.aspectRatio,
+              child: VideoPlayer(_controller),
+            ),
           ),
           IconButton(
             iconSize: 50,
@@ -164,17 +185,29 @@ class _VideoPreviewState extends State<VideoPreview> {
               icon: const Icon(Icons.fullscreen, color: Colors.white70),
               onPressed: () {
                 _savePosition();
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => VideoPreview(
-                      msgId: widget.msgId,
-                      videoPath: widget.videoPath,
-                      controller: _controller,
-                      isFullScreen: true,
+                if (widget.allMediaPaths != null && widget.currentIndex != null) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => Full_Screen_Image(
+                        paths: widget.allMediaPaths!,
+                        initialIndex: widget.currentIndex!,
+                      ),
                     ),
-                  ),
-                ).then((_) => setState(() {}));
+                  ).then((_) => setState(() {}));
+                } else {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => VideoPreview(
+                        msgId: widget.msgId,
+                        videoPath: widget.videoPath,
+                        controller: _controller,
+                        isFullScreen: true,
+                      ),
+                    ),
+                  ).then((_) => setState(() {}));
+                }
               },
             ),
           ),
