@@ -156,7 +156,7 @@ class _VideoPreviewState extends State<VideoPreview> {
           ),
           Positioned(
             bottom: 0, left: 0, right: 0,
-            child: VideoProgressIndicator(_controller, allowScrubbing: true),
+            child: VideoProgressIndicator(_controller, allowScrubbing: false),
           ),
           Positioned(
             top: 5, right: 5,

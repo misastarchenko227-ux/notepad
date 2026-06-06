@@ -25,15 +25,34 @@ class MessageList extends StatelessWidget {
           );
         }
 
+        // Собираем все медиафайлы (фото + видео) в один список
+        final List<String> mediaPaths = controller.currentMessages
+            .where((m) {
+          final path = m.content.split('|')[0];
+          return m.isVideo ||
+              path.endsWith('.jpg') || path.endsWith('.jpeg') ||
+              path.endsWith('.png') || path.endsWith('.webp');
+        })
+            .map((m) => m.content.split('|')[0])
+            .toList();
+
         return ListView.builder(
           padding: const EdgeInsets.only(bottom: 20),
           itemCount: controller.currentMessages.length,
           itemBuilder: (context, index) {
             final msg = controller.currentMessages[index];
+            final path = msg.content.split('|')[0];
+            final isMedia = msg.isVideo ||
+                path.endsWith('.jpg') || path.endsWith('.jpeg') ||
+                path.endsWith('.png') || path.endsWith('.webp');
+            final mediaIndex = isMedia ? mediaPaths.indexOf(path) : 0;
+
             return Message_Style(
               msg: msg,
               isSelected: controller.selectedMessageIds.contains(msg.id),
               isSelectionMode: controller.isSelectionMode,
+              mediaPaths: mediaPaths,     // ← передаём список
+              mediaIndex: mediaIndex,     // ← передаём индекс
               onLongPress: () => controller.toggleSelection(msg.id),
               onTap: () => controller.isSelectionMode
                   ? controller.toggleSelection(msg.id)

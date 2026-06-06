@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:notepad/Data_Base/database.dart';
-import 'package:notepad/Favorites_Screen/message_item.dart';
+import 'package:notepad/Favorites_Screen/Message_Content.dart';
 import 'package:notepad/Main_Functions/Photo/Full_Screen_Image.dart';
 import 'package:notepad/Main_Screen/main.dart';
 
@@ -14,7 +14,10 @@ class FavoritesScreen extends StatelessWidget {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => Full_Screen_Image(path: path),
+        builder: (context) => Full_Screen_Image(
+          paths: [path],     // ← только одно фото, без скролла
+          initialIndex: 0,
+        ),
       ),
     );
   }
@@ -71,7 +74,7 @@ class FavoritesScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    MessageContentWidget(
+                    MessageContent(
                       msg: msg,
                       onImageTap: () => _openImage(context, msg.content),
                     ),

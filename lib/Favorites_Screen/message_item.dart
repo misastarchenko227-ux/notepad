@@ -1,3 +1,4 @@
+/*
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:notepad/Main_Functions/VoiceMessagePlayer.dart';
@@ -51,4 +52,4 @@ class MessageContentWidget extends StatelessWidget {
 
     return Text(msg.content, style: textStyle);
   }
-}
+}*/

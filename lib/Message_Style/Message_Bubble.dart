@@ -9,7 +9,8 @@ class Message_Style extends StatelessWidget {
   final bool isSelectionMode;
   final VoidCallback onLongPress;
   final VoidCallback onTap;
-
+  final List<String> mediaPaths; // ← добавь
+  final int mediaIndex;
   const Message_Style({
     super.key,
     required this.msg,
@@ -17,6 +18,8 @@ class Message_Style extends StatelessWidget {
     required this.isSelectionMode,
     required this.onLongPress,
     required this.onTap,
+    required this.mediaPaths,    // ← добавь
+    required this.mediaIndex,
   });
 
   @override
@@ -49,6 +52,8 @@ class Message_Style extends StatelessWidget {
               msg: msg,
               isSelectionMode: isSelectionMode,
               onToggleSelection: onLongPress, // ← передаём тот же что у пузыря
+              mediaPaths: mediaPaths,   // ← добавь
+              mediaIndex: mediaIndex,   // ← добавь
             ),
           ),
           if (msg.isFavorite)

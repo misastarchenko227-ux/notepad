@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:notepad/Main_Functions/Photo/Full_Screen_Image.dart';
-// Фото
+
 class PhotoPreview extends StatelessWidget {
   final int msgId;
   final String photoPath;
@@ -9,6 +9,8 @@ class PhotoPreview extends StatelessWidget {
   final bool isSelectionMode;
   final VoidCallback onLongPress;
   final VoidCallback onTapInSelection;
+  final List<String> allMediaPaths; // ← добавь
+  final int currentIndex;           // ← добавь
 
   const PhotoPreview({
     Key? key,
@@ -18,9 +20,9 @@ class PhotoPreview extends StatelessWidget {
     required this.isSelectionMode,
     required this.onLongPress,
     required this.onTapInSelection,
+    required this.allMediaPaths,  // ← добавь
+    required this.currentIndex,   // ← добавь
   }) : super(key: key);
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -31,14 +33,18 @@ class PhotoPreview extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         GestureDetector(
-
           onTap: () {
             if (isSelectionMode) {
               onTapInSelection();
             } else {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => Full_Screen_Image(path: photoPath)),
+                MaterialPageRoute(
+                  builder: (context) => Full_Screen_Image(
+                    paths: allMediaPaths, // ← весь список
+                    initialIndex: currentIndex,
+                  ),
+                ),
               );
             }
           },

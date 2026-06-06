@@ -30,19 +30,14 @@ class VideoFullscreenView extends StatelessWidget {
   });
 
   Widget _buildVideo(BuildContext context) {
-    final screenSize = MediaQuery.of(context).size;
-    final videoRatio = controller.value.aspectRatio;
-    final screenRatio = screenSize.width / screenSize.height;
-
-    double baseScale = videoRatio < screenRatio
-        ? screenSize.width / (screenSize.height * videoRatio)
-        : screenSize.height * videoRatio / screenSize.width;
-
-    return Transform.scale(
-      scale: baseScale,
+    return InteractiveViewer(
+      clipBehavior: Clip.none,
+      minScale: 1.0,      // исходный размер
+      maxScale: 5.0,      // максимальный зум
+      panEnabled: true,  // ← запрещаем перемещение, только зум
       child: Center(
         child: AspectRatio(
-          aspectRatio: videoRatio,
+          aspectRatio: controller.value.aspectRatio,
           child: VideoPlayer(controller),
         ),
       ),
