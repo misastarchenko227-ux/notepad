@@ -51,17 +51,6 @@ class _MyNotesPageState extends State<MyNotesPage> {
                   hintText: 'Поиск заметки...',
                   border: InputBorder.none,
                   hintStyle: TextStyle(color: colorScheme.onSurfaceVariant.withOpacity(0.6)),
-                  suffixIcon: _searchQuery.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.clear),
-                          onPressed: () {
-                            _searchController.clear();
-                            setState(() {
-                              _searchQuery = '';
-                            });
-                          },
-                        )
-                      : null,
                 ),
                 style: TextStyle(fontSize: 18, color: colorScheme.onSurface),
                 onChanged: (value) {
