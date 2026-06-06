@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:notepad/Data_Base/database.dart';
 import 'package:notepad/Favorites_Screen/Favorites_Screen.dart';
 import 'package:notepad/Run_App/Run_App.dart';
+import 'package:notepad/Search/Search.dart';
 
 late AppDatabase database;
 
@@ -143,12 +144,8 @@ class _MyNotesPageState extends State<MyNotesPage> {
                       
                       final allNotes = snapshot.data!;
                       
-                      // Фильтрация заметок в реальном времени (по буквам)
-                      final notes = allNotes.where((note) {
-                        final content = note.content.toLowerCase();
-                        final query = _searchQuery.toLowerCase().trim();
-                        return content.contains(query);
-                      }).toList();
+                      // Используем вынесенную логику фильтрации
+                      final notes = NoteSearch.filter(allNotes, _searchQuery);
 
                       if (allNotes.isEmpty) {
                         return const Center(child: Text('Заметок пока нет'));
