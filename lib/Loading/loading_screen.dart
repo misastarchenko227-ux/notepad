@@ -15,7 +15,7 @@ class _UnicoreLoadingScreenState extends State<UnicoreLoadingScreen> {
   Timer? _pageTimer;
   final PageController _pageController = PageController();
   int _currentPage = 0;
-
+  bool _isZoomed = false;
   final List<String> _imagePaths = [
     'assets/images/manual1.jpg',
     'assets/images/manual2.jpg',
@@ -47,6 +47,7 @@ class _UnicoreLoadingScreenState extends State<UnicoreLoadingScreen> {
   void _startAutoScroll() {
     _pageTimer = Timer.periodic(const Duration(milliseconds: 5000), (timer) {
       if (!mounted) return;
+      if (_isZoomed) return; // пауза если зум активен
 
       if (_currentPage < _imagePaths.length - 1) {
         setState(() => _currentPage++);
@@ -143,9 +144,19 @@ class _UnicoreLoadingScreenState extends State<UnicoreLoadingScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(12),
-                      child: Image.asset(
-                        _imagePaths[index],
-                        fit: BoxFit.contain,
+                      child: InteractiveViewer(
+                        minScale: 1.0,
+                        maxScale: 4.0,
+                        onInteractionStart: (_) {
+                          setState(() => _isZoomed = true);
+                        },
+                        onInteractionEnd: (_) {
+                          setState(() => _isZoomed = false);
+                        },
+                        child: Image.asset(
+                          _imagePaths[index],
+                          fit: BoxFit.contain,
+                        ),
                       ),
                     ),
                   );
