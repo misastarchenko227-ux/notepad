@@ -2,48 +2,90 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:notepad/Main_Screen/main.dart';
 
-
-
 class UnicoreLoadingScreen extends StatefulWidget {
   const UnicoreLoadingScreen({super.key});
 
   @override
   State<UnicoreLoadingScreen> createState() => _UnicoreLoadingScreenState();
-
-// УДАЛИЛ ОТСЮДА ЛИШНИЙ build(), который вызывал ошибку
 }
 
 class _UnicoreLoadingScreenState extends State<UnicoreLoadingScreen> {
   double _progress = 0.0;
-  Timer? _timer;
+  Timer? _progressTimer;
+  Timer? _pageTimer;
+  final PageController _pageController = PageController();
+  int _currentPage = 0;
+
+  final List<String> _imagePaths = [
+    'assets/images/manual1.jpg',
+    'assets/images/manual2.jpg',
+    'assets/images/manual3.jpg',
+    'assets/images/manual4.jpg',
+    'assets/images/manual5.jpg',
+  ];
 
   @override
   void initState() {
     super.initState();
-    _startLoading();
+    _startProgress();
+    _startAutoScroll();
   }
 
-  void _startLoading() {
-    _timer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
-      if (!mounted) return; // Проверка, что экран еще существует
+  void _startProgress() {
+    _progressTimer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
+      if (!mounted) return;
       setState(() {
         if (_progress < 1.0) {
           _progress += 0.01;
         } else {
-          _timer?.cancel();
-          // Переход на главный экран приложения
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const MyNotesPage()), // Убедись, что MyApp импортирован правильно
-          );
+          _progressTimer?.cancel();
         }
       });
     });
   }
 
+  void _startAutoScroll() {
+    _pageTimer = Timer.periodic(const Duration(milliseconds: 5000), (timer) {
+      if (!mounted) return;
+
+      if (_currentPage < _imagePaths.length - 1) {
+        setState(() => _currentPage++);
+        _pageController.animateToPage(
+          _currentPage,
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeInOut,
+        );
+      } else {
+        _pageTimer?.cancel();
+        if (_progress >= 1.0) {
+          _navigateToMain();
+        } else {
+          _progressTimer = Timer.periodic(const Duration(milliseconds: 50), (t) {
+            if (!mounted) return;
+            setState(() => _progress += 0.01);
+            if (_progress >= 1.0) {
+              t.cancel();
+              _navigateToMain();
+            }
+          });
+        }
+      }
+    });
+  }
+
+  void _navigateToMain() {
+    if (!mounted) return;
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const MyNotesPage()),
+    );
+  }
+
   @override
   void dispose() {
-    _timer?.cancel();
+    _progressTimer?.cancel();
+    _pageTimer?.cancel();
+    _pageController.dispose();
     super.dispose();
   }
 
@@ -54,15 +96,17 @@ class _UnicoreLoadingScreenState extends State<UnicoreLoadingScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            const SizedBox(height: 80),
+            const Spacer(),
 
-            // ЛОГОТИП
             Center(
               child: Column(
                 children: [
-                   Image.asset('assets/images/logo.png',width: 120, // Подбери нужный размер
-                     height: 120,
-                     fit: BoxFit.contain,),
+                  Image.asset(
+                    'assets/images/logo.png',
+                    width: 120,
+                    height: 120,
+                    fit: BoxFit.contain,
+                  ),
                   const SizedBox(height: 20),
                   const Text(
                     "UNICORE",
@@ -88,51 +132,61 @@ class _UnicoreLoadingScreenState extends State<UnicoreLoadingScreen> {
 
             const Spacer(),
 
-            // ЗАГРУЗКА
+            SizedBox(
+              height: 220,
+              child: PageView.builder(
+                controller: _pageController,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: _imagePaths.length,
+                itemBuilder: (context, index) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.asset(
+                        _imagePaths[index],
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(
+                _imagePaths.length,
+                    (index) => AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  width: _currentPage == index ? 20 : 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(4),
+                    color: _currentPage == index
+                        ? const Color(0xFF2C3E50)
+                        : Colors.grey.shade300,
+                  ),
+                ),
+              ),
+            ),
+
+            const Spacer(),
+
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 40),
               child: Column(
                 children: [
-                  Container(
-                    height: 40,
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.grey.shade200, width: 1.5),
-                    ),
-                    child: Stack(
-                      children: [
-                        LayoutBuilder(
-                          builder: (context, constraints) => AnimatedContainer(
-                            duration: const Duration(milliseconds: 50),
-                            width: constraints.maxWidth * _progress,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(15),
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFFBDC3C7), Color(0xFF2C3E50)],
-                              ),
-                            ),
-                          ),
-                        ),
-                        Center(
-                          child: Text(
-                            "${(_progress * 100).toInt()}%",
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: _progress > 0.5 ? Colors.white : Colors.black87,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
+
+                  const SizedBox(height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: const [
-                      Icon(Icons.auto_awesome_mosaic_outlined, size: 16, color: Colors.blueGrey),
+                      Icon(Icons.auto_awesome_mosaic_outlined,
+                          size: 16, color: Colors.blueGrey),
                       SizedBox(width: 10),
                       Text(
                         "Загрузка контента...",
@@ -145,7 +199,8 @@ class _UnicoreLoadingScreenState extends State<UnicoreLoadingScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 80),
+
+            const Spacer(),
           ],
         ),
       ),
