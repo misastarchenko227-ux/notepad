@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'dart:io'; // Обязательно для проверки сети
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart'; // Не забудь добавить в pubspec.yaml
+import 'package:notepad/Advertisement/TelegramBannerAd.dart';
+
 
 // 1. ПОЛНОЭКРАННАЯ РЕКЛАМА (ЗАСТАВКА)
 /*
@@ -132,7 +133,6 @@ class _MiniBannerAdState extends State<MiniBannerAd> {
     _checkInternet();
   }
 
-  // Скрываем баннер, если нет интернета
   Future<void> _checkInternet() async {
     try {
       final result = await InternetAddress.lookup('google.com');
@@ -144,75 +144,17 @@ class _MiniBannerAdState extends State<MiniBannerAd> {
     }
   }
 
-  // Функция для открытия твоего ТГ-канала
-  Future<void> _launchTelegram() async {
-    final Uri url = Uri.parse('https://t.me/uncorelabs');
-    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
-      debugPrint("Не удалось открыть ссылку");
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     if (!_isVisible) return const SizedBox.shrink();
 
-    return GestureDetector(
-      onTap: _launchTelegram,
-      child: Container(
-        width: double.infinity,
-        height: 65,
-        margin: const EdgeInsets.fromLTRB(12, 0, 12, 12), // Отступы от краев
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF2481CC), Color(0xFF33A1DE)], // Цвета Telegram
-          ),
-          borderRadius: BorderRadius.circular(15),
-          boxShadow: const [
-            BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3))
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(15),
-          child: Row(
-            children: [
-              // Левая часть: Иконка
-              Container(
-                width: 65,
-                height: 65,
-                color: Colors.white.withOpacity(0.1),
-                child: const Icon(Icons.telegram, color: Colors.white, size: 35),
-              ),
-              const SizedBox(width: 12),
-              // Центр: Текст
-              const Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "ПРИСОЕДИНЯЙСЯ К НАМ",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                    Text(
-                      "Новости Unicore Labs в Telegram",
-                      style: TextStyle(color: Colors.white70, fontSize: 11),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-              // Правая часть: Стрелочка
-              const Icon(Icons.chevron_right, color: Colors.white54),
-              const SizedBox(width: 12),
-            ],
-          ),
-        ),
-      ),
+    // Сюда добавляешь новые баннеры
+    return const Column(
+      children: [
+        TelegramBannerAd(),
+        // GooglePlayBannerAd(),
+        // DiscordBannerAd(),
+      ],
     );
   }
 }
