@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:notepad/Advertisement/ad_screen.dart';
 import 'package:notepad/Input_Panel/Note_Details_Screen.dart';
+import 'package:notepad/Privacy_policy/Privacy_policy.dart';
+import 'package:notepad/Privacy_policy/privacy_policy_screen.dart';
+
+
 import 'package:provider/provider.dart';
 import 'package:notepad/Data_Base/database.dart';
 import 'package:notepad/Favorites_Screen/Favorites_Screen.dart';
@@ -71,6 +75,19 @@ class _MyNotesPageState extends State<MyNotesPage> {
                   _searchController.clear();
                 }
               });
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.info),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => PrivacyPolicyScreen(
+                    sections: PrivacyPolicyContent.sections,
+                  ),
+                ),
+              );
             },
           ),
           IconButton(
@@ -193,7 +210,10 @@ class _MyNotesPageState extends State<MyNotesPage> {
               ],
             ),
           ),
-          const MiniBannerAd(),
+          const SafeArea(
+            top: false,
+            child: MiniBannerAd(),
+          ),
         ],
       ),
     );
