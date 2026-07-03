@@ -2,7 +2,7 @@
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
+import "package:url_launcher/url_launcher.dart";
 import 'Privacy_policy.dart'; // <-- единственный импорт данных, hide больше не нужен
 
 class PrivacyPolicyScreen extends StatelessWidget {
