@@ -132,14 +132,17 @@ class _MiniBannerAdState extends State<MiniBannerAd> {
     super.initState();
     _checkInternet();
   }
-
   Future<void> _checkInternet() async {
     try {
       final result = await InternetAddress.lookup('google.com');
+      if (!mounted) return; // виджет мог быть удалён, пока шёл запрос — выходим без setState
+
       if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
         setState(() => _isVisible = true);
       }
     } on SocketException catch (_) {
+      if (!mounted) return; // та же проверка нужна и в catch-блоке — ошибка тоже приходит асинхронно
+
       setState(() => _isVisible = false);
     }
   }
