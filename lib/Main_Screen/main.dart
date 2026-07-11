@@ -132,9 +132,14 @@ class _MyNotesPageState extends State<MyNotesPage> {
                     ],
                   ),
                 ),
-                ElevatedButton(
+                ElevatedButton.icon(
                   onPressed: () => saveMessage(context),
-                  child: const Text("Избранные сообщения!"),
+                  icon: const Icon(Icons.star), // Иконка сохранения слева
+                  label: const Text("Избранные сообщения!"),
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 50), // double.infinity растягивает на всю ширину
+                    padding: const EdgeInsets.symmetric(vertical: 16), // Немного увеличиваем высоту для красоты (по желанию)
+                  ),
                 ),
                 Expanded(
                   child: StreamBuilder<List<Note>>(

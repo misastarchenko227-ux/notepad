@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:notepad/Data_Base/database.dart';
 import 'package:notepad/Favorites_Screen/Message_Content.dart';
+import 'package:notepad/Input_Panel/Note_Details_Screen.dart';
 import 'package:notepad/Main_Functions/Photo/Full_Screen_Image.dart';
 import 'package:notepad/Main_Screen/main.dart';
 
@@ -15,6 +16,15 @@ class FavoritesScreen extends StatelessWidget {
         path.endsWith('.jpeg') ||
         path.endsWith('.png') ||
         path.endsWith('.webp');
+  }
+  void _goToNoteScreen(BuildContext context, Note note) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        // Замените `NoteDetailScreen` на реальное название вашего экрана заметки
+        builder: (context) => NoteDetailsScreen(note: note),
+      ),
+    );
   }
 
   @override
@@ -106,14 +116,18 @@ class FavoritesScreen extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Expanded(
-                          child: Text(
-                            "Из заметки: ${note.content}",
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.blueAccent,
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.opaque, // Чтобы клик срабатывал по всей области, а не только по буквам
+                            onTap: () => _goToNoteScreen(context, note), // Вызов функции при нажатии
+                            child: Text(
+                              "Из заметки: ${note.content}",
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.blueAccent,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         IconButton(
