@@ -31,7 +31,7 @@ class InputPanel extends StatelessWidget {
                 controller.isRecording ? Icons.stop : Icons.mic,
                 color: controller.isRecording ? Colors.red : colorScheme.primary,
               ),
-              onPressed: controller.toggleRecording,
+              onPressed: () => controller.toggleRecording(context), // ← передаём context для диалога подписи
             ),
             IconButton(
               icon: const Icon(Icons.image, color: Colors.blue),
@@ -68,7 +68,7 @@ class InputPanel extends StatelessWidget {
               backgroundColor: colorScheme.primary,
               child: IconButton(
                 icon: const Icon(Icons.send, color: Colors.white),
-                onPressed: controller.sendMessage,
+                onPressed: () => controller.sendMessage(context), // ← передаём context для диалога подписи
               ),
             ),
           ],

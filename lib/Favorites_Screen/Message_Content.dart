@@ -34,11 +34,26 @@ class MessageContent extends StatelessWidget {
     // Голосовое
     // Голосовое — вторая часть после '|' это волна (амплитуды через запятую),
     // а не подпись, как у фото/видео. Парсим отдельно от comment.
+    // Голосовое: content = path|waveform|caption (caption опционален)
     if (path.endsWith('.m4a') || path.endsWith('.wav')) {
-      final List<double> waveform = comment != null && comment.isNotEmpty
-          ? comment.split(',').map(double.parse).toList()
+      final String? waveformRaw = parts.length > 1 ? parts[1] : null;
+      final String? voiceCaption = parts.length > 2 && parts[2].isNotEmpty ? parts[2] : null;
+
+      final List<double> waveform = waveformRaw != null && waveformRaw.isNotEmpty
+          ? waveformRaw.split(',').map(double.parse).toList()
           : const [];
-      return VoiceMessagePlayer(path: path, waveform: waveform);
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          VoiceMessagePlayer(path: path, waveform: waveform),
+          if (voiceCaption != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(voiceCaption, style: textStyle),
+            ),
+        ],
+      );
     }
 
     // Видео

@@ -16,8 +16,8 @@ class NoteDetailsController {
   final ImagePicker _picker = ImagePicker();
   final AudioRecorder _audioRecorder = AudioRecorder();
 
-  StreamSubscription<Amplitude>? _ampSub;   // новое
-  List<double> currentAmplitudes = [];       // новое — волна текущей записи для live-превью
+  StreamSubscription<Amplitude>? _ampSub;
+  List<double> currentAmplitudes = [];
 
   Set<int> selectedMessageIds = {};
   bool isSelectionMode = false;
@@ -93,11 +93,11 @@ class NoteDetailsController {
     );
   }
 
-  /// Теперь самолётик решает сам: идёт запись — останавливаем и шлём голос,
-  /// нет записи — шлём текст (если он есть).
-  void sendMessage() {
+  /// Самолётик: идёт запись — останавливаем и предлагаем подписать голос,
+  /// нет записи — шлём текст.
+  Future<void> sendMessage(BuildContext context) async {
     if (isRecording) {
-      _stopAndSendVoice();
+      await _stopAndSendVoice(context);
       return;
     }
     if (messageController.text.trim().isNotEmpty) {
@@ -107,12 +107,12 @@ class NoteDetailsController {
     }
   }
 
-  /// Микрофон теперь только СТАРТУЕТ запись. Остановка и отправка —
-  /// через sendMessage() (самолётик) или explicit cancelRecording(), если понадобится отмена.
-  Future<void> toggleRecording() async {
+  /// Микрофон стартует запись; повторное нажатие тоже останавливает и отправляет
+  /// (на случай, если где-то ещё используется отдельно от самолётика).
+  Future<void> toggleRecording(BuildContext context) async {
     try {
       if (isRecording) {
-        await _stopAndSendVoice();
+        await _stopAndSendVoice(context);
       } else {
         var status = await Permission.microphone.request();
         if (status != PermissionStatus.granted) return;
@@ -126,10 +126,9 @@ class NoteDetailsController {
         _ampSub = _audioRecorder
             .onAmplitudeChanged(const Duration(milliseconds: 120))
             .listen((amp) {
-          // amp.current в дБ (обычно -45..0), приводим к диапазону 0..1 для отрисовки волны
           final normalized = ((amp.current + 45) / 45).clamp(0.0, 1.0);
           currentAmplitudes.add(normalized);
-          onUpdate(); // обновляем live-волну по мере записи
+          onUpdate();
         });
       }
       onUpdate();
@@ -138,18 +137,55 @@ class NoteDetailsController {
     }
   }
 
-  Future<void> _stopAndSendVoice() async {
+  /// Останавливает запись, спрашивает подпись (как у фото/видео) и сохраняет
+  /// content в формате path|waveform|caption. Подпись необязательна.
+  Future<void> _stopAndSendVoice(BuildContext context) async {
     final path = await _audioRecorder.stop();
     await _ampSub?.cancel();
     isRecording = false;
+    onUpdate(); // сразу убираем индикатор записи, пока идёт диалог подписи
 
-    if (path != null) {
-      debugPrint("amplitudes collected: ${currentAmplitudes.length}"); // ← добавь эту строку
-      final waveform = currentAmplitudes.map((e) => e.toStringAsFixed(2)).join(',');
-      await database.addMessage(noteId, "$path|$waveform", false);
+    if (path == null) {
+      currentAmplitudes = [];
+      return;
     }
+
+    final waveform = currentAmplitudes.map((e) => e.toStringAsFixed(2)).join(',');
     currentAmplitudes = [];
-    onUpdate();
+
+    final captionController = TextEditingController();
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Голосовое сообщение'),
+        content: TextField(
+          controller: captionController,
+          decoration: const InputDecoration(hintText: 'Подпись (необязательно)...'),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              // Отмена = отправить без подписи, а не потерять запись целиком
+              await database.addMessage(noteId, "$path|$waveform", false);
+              Navigator.pop(context);
+              onUpdate();
+            },
+            child: const Text('Без подписи'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final caption = captionController.text.trim();
+              final content = caption.isEmpty ? "$path|$waveform" : "$path|$waveform|$caption";
+              await database.addMessage(noteId, content, false);
+              Navigator.pop(context);
+              onUpdate();
+            },
+            child: const Text('Отправить'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> addMedia(BuildContext context, bool isVideo) async {
