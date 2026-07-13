@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:notepad/Data_Base/database.dart';
@@ -14,6 +15,9 @@ class NoteDetailsController {
   final TextEditingController messageController = TextEditingController();
   final ImagePicker _picker = ImagePicker();
   final AudioRecorder _audioRecorder = AudioRecorder();
+
+  StreamSubscription<Amplitude>? _ampSub;   // новое
+  List<double> currentAmplitudes = [];       // новое — волна текущей записи для live-превью
 
   Set<int> selectedMessageIds = {};
   bool isSelectionMode = false;
@@ -89,31 +93,63 @@ class NoteDetailsController {
     );
   }
 
+  /// Теперь самолётик решает сам: идёт запись — останавливаем и шлём голос,
+  /// нет записи — шлём текст (если он есть).
   void sendMessage() {
+    if (isRecording) {
+      _stopAndSendVoice();
+      return;
+    }
     if (messageController.text.trim().isNotEmpty) {
       database.addMessage(noteId, messageController.text, false);
       messageController.clear();
+      onUpdate();
     }
   }
 
+  /// Микрофон теперь только СТАРТУЕТ запись. Остановка и отправка —
+  /// через sendMessage() (самолётик) или explicit cancelRecording(), если понадобится отмена.
   Future<void> toggleRecording() async {
     try {
       if (isRecording) {
-        final path = await _audioRecorder.stop();
-        isRecording = false;
-        if (path != null) await database.addMessage(noteId, path, false);
+        await _stopAndSendVoice();
       } else {
         var status = await Permission.microphone.request();
         if (status != PermissionStatus.granted) return;
         final directory = await getApplicationDocumentsDirectory();
         final filePath = '${directory.path}/voice_${DateTime.now().millisecondsSinceEpoch}.m4a';
+
+        currentAmplitudes = [];
         await _audioRecorder.start(const RecordConfig(), path: filePath);
         isRecording = true;
+
+        _ampSub = _audioRecorder
+            .onAmplitudeChanged(const Duration(milliseconds: 120))
+            .listen((amp) {
+          // amp.current в дБ (обычно -45..0), приводим к диапазону 0..1 для отрисовки волны
+          final normalized = ((amp.current + 45) / 45).clamp(0.0, 1.0);
+          currentAmplitudes.add(normalized);
+          onUpdate(); // обновляем live-волну по мере записи
+        });
       }
       onUpdate();
     } catch (e) {
       debugPrint("Error recording: $e");
     }
+  }
+
+  Future<void> _stopAndSendVoice() async {
+    final path = await _audioRecorder.stop();
+    await _ampSub?.cancel();
+    isRecording = false;
+
+    if (path != null) {
+      debugPrint("amplitudes collected: ${currentAmplitudes.length}"); // ← добавь эту строку
+      final waveform = currentAmplitudes.map((e) => e.toStringAsFixed(2)).join(',');
+      await database.addMessage(noteId, "$path|$waveform", false);
+    }
+    currentAmplitudes = [];
+    onUpdate();
   }
 
   Future<void> addMedia(BuildContext context, bool isVideo) async {
@@ -150,6 +186,7 @@ class NoteDetailsController {
   }
 
   void dispose() {
+    _ampSub?.cancel();
     messageController.dispose();
     _audioRecorder.dispose();
   }

@@ -32,8 +32,13 @@ class MessageContent extends StatelessWidget {
     final TextStyle textStyle = TextStyle(fontSize: 16, color: colorScheme.onSurface);
 
     // Голосовое
+    // Голосовое — вторая часть после '|' это волна (амплитуды через запятую),
+    // а не подпись, как у фото/видео. Парсим отдельно от comment.
     if (path.endsWith('.m4a') || path.endsWith('.wav')) {
-      return VoiceMessagePlayer(path: path);
+      final List<double> waveform = comment != null && comment.isNotEmpty
+          ? comment.split(',').map(double.parse).toList()
+          : const [];
+      return VoiceMessagePlayer(path: path, waveform: waveform);
     }
 
     // Видео
