@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 // голосовые сообщения
 class VoiceMessagePlayer extends StatefulWidget {
   final String path;
-  final List<double> waveform; // новое — амплитуды записи для отрисовки волны
+  final List<double> waveform;
 
   const VoiceMessagePlayer({
     super.key,
@@ -22,17 +22,25 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
   Duration _duration = Duration.zero;
   Duration _position = Duration.zero;
 
+  // новое — состояние протягивания пальцем
+  bool _isDragging = false;
+  double _dragProgress = 0.0;
+
   @override
   void initState() {
     super.initState();
     _player = AudioPlayer();
 
     _player.onDurationChanged.listen((d) => setState(() => _duration = d));
-    _player.onPositionChanged.listen((p) => setState(() => _position = p));
+    _player.onPositionChanged.listen((p) {
+      // пока пользователь тащит палец — игнорируем позицию от плеера,
+      // иначе она "перебьёт" визуальное отображение драга
+      if (!_isDragging) setState(() => _position = p);
+    });
     _player.onPlayerComplete.listen((_) {
       setState(() {
         _isPlaying = false;
-        _position = Duration.zero; // возвращаем волну к началу после проигрывания
+        _position = Duration.zero;
       });
     });
   }
@@ -52,18 +60,49 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
     setState(() => _isPlaying = !_isPlaying);
   }
 
+  double _ratioFromDx(double dx, double width) => (dx / width).clamp(0.0, 1.0);
+
   void _seekToTap(double dx, double width) {
     if (_duration == Duration.zero) return;
-    final ratio = (dx / width).clamp(0.0, 1.0);
-    _player.seek(_duration * ratio);
+    _player.seek(_duration * _ratioFromDx(dx, width));
+  }
+
+  void _onDragStart(double dx, double width) {
+    if (_duration == Duration.zero) return;
+    setState(() {
+      _isDragging = true;
+      _dragProgress = _ratioFromDx(dx, width);
+    });
+  }
+
+  void _onDragUpdate(double dx, double width) {
+    if (_duration == Duration.zero) return;
+    // только двигаем волну визуально, без вызова seek — так плавнее
+    setState(() => _dragProgress = _ratioFromDx(dx, width));
+  }
+
+  void _onDragEnd() {
+    if (_duration == Duration.zero) return;
+    // перематываем ровно один раз, когда палец отпущен
+    _player.seek(_duration * _dragProgress);
+    setState(() {
+      _position = _duration * _dragProgress;
+      _isDragging = false;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final progress = _duration.inMilliseconds == 0
+
+    // во время драга показываем _dragProgress, иначе — реальную позицию плеера
+    final progress = _isDragging
+        ? _dragProgress
+        : (_duration.inMilliseconds == 0
         ? 0.0
-        : _position.inMilliseconds / _duration.inMilliseconds;
+        : _position.inMilliseconds / _duration.inMilliseconds);
+
+    final displayedPosition = _isDragging ? _duration * _dragProgress : _position;
 
     return Row(
       children: [
@@ -74,8 +113,10 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
         Expanded(
           child: LayoutBuilder(
             builder: (context, constraints) => GestureDetector(
-              // тап по волне — перемотка на нужное место, как в WhatsApp/Telegram
               onTapDown: (d) => _seekToTap(d.localPosition.dx, constraints.maxWidth),
+              onHorizontalDragStart: (d) => _onDragStart(d.localPosition.dx, constraints.maxWidth),
+              onHorizontalDragUpdate: (d) => _onDragUpdate(d.localPosition.dx, constraints.maxWidth),
+              onHorizontalDragEnd: (_) => _onDragEnd(),
               child: SizedBox(
                 height: 32,
                 child: CustomPaint(
@@ -91,7 +132,7 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
           ),
         ),
         Text(
-          "${_position.inMinutes}:${(_position.inSeconds % 60).toString().padLeft(2, '0')}",
+          "${displayedPosition.inMinutes}:${(displayedPosition.inSeconds % 60).toString().padLeft(2, '0')}",
           style: TextStyle(fontSize: 12, color: colorScheme.outline),
         ),
       ],
@@ -100,8 +141,6 @@ class _VoiceMessagePlayerState extends State<VoiceMessagePlayer> {
 }
 
 /// Рисует полоски волны как в WhatsApp/Telegram.
-/// amplitudes — список амплитуд 0..1, собранных во время записи.
-/// progress — доля прослушанного (0..1), чтобы красить "пройденные" бары другим цветом.
 class WaveformPainter extends CustomPainter {
   WaveformPainter({
     required this.amplitudes,
@@ -146,8 +185,6 @@ class WaveformPainter extends CustomPainter {
     }
   }
 
-  /// Сжимает произвольное число амплитуд до нужного количества баров,
-  /// беря максимум в каждом "бакете" — так волна выглядит живее, чем при усреднении.
   List<double> _resample(List<double> source, int targetCount) {
     final bucketSize = source.length / targetCount;
     return List.generate(targetCount, (i) {
