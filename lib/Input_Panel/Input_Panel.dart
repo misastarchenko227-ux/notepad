@@ -28,10 +28,12 @@ class InputPanel extends StatelessWidget {
           children: [
             IconButton(
               icon: Icon(
-                controller.isRecording ? Icons.stop : Icons.mic,
+                controller.isRecording ? Icons.delete_outline : Icons.mic,
                 color: controller.isRecording ? Colors.red : colorScheme.primary,
               ),
-              onPressed: () => controller.toggleRecording(context), // ← передаём context для диалога подписи
+              onPressed: controller.isRecording
+                  ? controller.cancelRecording       // во время записи — удалить
+                  : () => controller.toggleRecording(context), // не записываем — начать
             ),
             IconButton(
               icon: const Icon(Icons.image, color: Colors.blue),

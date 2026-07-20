@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:notepad/Data_Base/database.dart';
@@ -18,6 +19,7 @@ class NoteDetailsController {
 
   StreamSubscription<Amplitude>? _ampSub;
   List<double> currentAmplitudes = [];
+  String? _currentRecordingPath; // новое — нужен путь, чтобы удалить файл при отмене
 
   Set<int> selectedMessageIds = {};
   bool isSelectionMode = false;
@@ -107,34 +109,53 @@ class NoteDetailsController {
     }
   }
 
-  /// Микрофон стартует запись; повторное нажатие тоже останавливает и отправляет
-  /// (на случай, если где-то ещё используется отдельно от самолётика).
+  /// Микрофон стартует запись. Пока идёт запись, эта кнопка больше не используется
+  /// для остановки — за это отвечают sendMessage (отправить) и cancelRecording (удалить).
   Future<void> toggleRecording(BuildContext context) async {
+    if (isRecording) return; // пока пишем — кнопка микрофона неактивна, см. InputPanel
     try {
-      if (isRecording) {
-        await _stopAndSendVoice(context);
-      } else {
-        var status = await Permission.microphone.request();
-        if (status != PermissionStatus.granted) return;
-        final directory = await getApplicationDocumentsDirectory();
-        final filePath = '${directory.path}/voice_${DateTime.now().millisecondsSinceEpoch}.m4a';
+      var status = await Permission.microphone.request();
+      if (status != PermissionStatus.granted) return;
+      final directory = await getApplicationDocumentsDirectory();
+      final filePath = '${directory.path}/voice_${DateTime.now().millisecondsSinceEpoch}.m4a';
 
-        currentAmplitudes = [];
-        await _audioRecorder.start(const RecordConfig(), path: filePath);
-        isRecording = true;
+      currentAmplitudes = [];
+      _currentRecordingPath = filePath;
+      await _audioRecorder.start(const RecordConfig(), path: filePath);
+      isRecording = true;
 
-        _ampSub = _audioRecorder
-            .onAmplitudeChanged(const Duration(milliseconds: 120))
-            .listen((amp) {
-          final normalized = ((amp.current + 45) / 45).clamp(0.0, 1.0);
-          currentAmplitudes.add(normalized);
-          onUpdate();
-        });
-      }
+      _ampSub = _audioRecorder
+          .onAmplitudeChanged(const Duration(milliseconds: 120))
+          .listen((amp) {
+        final normalized = ((amp.current + 45) / 45).clamp(0.0, 1.0);
+        currentAmplitudes.add(normalized);
+        onUpdate();
+      });
       onUpdate();
     } catch (e) {
       debugPrint("Error recording: $e");
     }
+  }
+
+  /// Отменяет текущую запись: останавливает рекордер, удаляет недописанный
+  /// файл с диска и сбрасывает состояние — сообщение никуда не отправляется.
+  Future<void> cancelRecording() async {
+    if (!isRecording) return;
+    await _audioRecorder.stop();
+    await _ampSub?.cancel();
+    isRecording = false;
+
+    final path = _currentRecordingPath;
+    if (path != null) {
+      final file = File(path);
+      if (await file.exists()) {
+        await file.delete();
+      }
+    }
+
+    currentAmplitudes = [];
+    _currentRecordingPath = null;
+    onUpdate();
   }
 
   /// Останавливает запись, спрашивает подпись (как у фото/видео) и сохраняет
@@ -143,7 +164,8 @@ class NoteDetailsController {
     final path = await _audioRecorder.stop();
     await _ampSub?.cancel();
     isRecording = false;
-    onUpdate(); // сразу убираем индикатор записи, пока идёт диалог подписи
+    _currentRecordingPath = null;
+    onUpdate();
 
     if (path == null) {
       currentAmplitudes = [];
@@ -166,7 +188,6 @@ class NoteDetailsController {
         actions: [
           TextButton(
             onPressed: () async {
-              // Отмена = отправить без подписи, а не потерять запись целиком
               await database.addMessage(noteId, "$path|$waveform", false);
               Navigator.pop(context);
               onUpdate();
