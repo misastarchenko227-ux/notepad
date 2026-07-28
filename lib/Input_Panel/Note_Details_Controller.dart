@@ -7,6 +7,7 @@ import 'package:notepad/Main_Screen/main.dart';
 import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:wechat_assets_picker/wechat_assets_picker.dart';
 
 
 class NoteDetailsController {
@@ -209,37 +210,115 @@ class NoteDetailsController {
     );
   }
 
-  Future<void> addMedia(BuildContext context, bool isVideo) async {
-    final XFile? file = isVideo
-        ? await _picker.pickVideo(source: ImageSource.gallery)
-        : await _picker.pickImage(source: ImageSource.gallery);
+  /// Открывает системную галерею в режиме множественного выбора (фото и видео
+  /// вперемешку, без ограничения по количеству — как альбом в Telegram).
+  /// Одна подпись на весь пакет, привязывается к последнему файлу.
 
-    if (file != null) {
-      final commentController = TextEditingController();
-      await showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text(isVideo ? 'Видео' : 'Фото'),
-          content: TextField(
-            controller: commentController,
-            decoration: const InputDecoration(hintText: 'Подпись...'),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Отмена')),
-            ElevatedButton(
-              onPressed: () {
-                final content = commentController.text.isEmpty
-                    ? file.path
-                    : "${file.path}|${commentController.text}";
-                database.addMessage(noteId, content, isVideo);
-                Navigator.pop(context);
-              },
-              child: const Text('ОК'),
+  Future<void> addMedia(BuildContext context) async {
+    final List<AssetEntity>? assets = await AssetPicker.pickAssets(
+      context,
+      pickerConfig: const AssetPickerConfig(
+        maxAssets: 9999, // условно "без ограничений"
+        requestType: RequestType.common, // фото и видео вместе
+        themeColor: Colors.blue,
+        // светлая тема гарантированно, независимо от устройства
+        pickerTheme: null,
+      ),
+    );
+
+    if (assets == null || assets.isEmpty) return;
+
+    final commentController = TextEditingController();
+
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Отправить ${assets.length} файл(ов)'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              height: 90,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: assets.length,
+                itemBuilder: (context, index) {
+                  final asset = assets[index];
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Stack(
+                      children: [
+                        SizedBox(
+                          width: 70,
+                          height: 90,
+                          // виджет пакета сам достаёт превью из галереи
+                          child: AssetEntityImage(
+                            asset,
+                            isOriginal: false,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                        if (asset.type == AssetType.video)
+                          const Positioned(
+                            right: 4,
+                            bottom: 4,
+                            child: Icon(Icons.videocam, color: Colors.white, size: 18),
+                          ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+            TextField(
+              controller: commentController,
+              decoration: const InputDecoration(hintText: 'Подпись...'),
             ),
           ],
         ),
-      );
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Отмена'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Отправить'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    for (var i = 0; i < assets.length; i++) {
+      final asset = assets[i];
+      final File? file = await asset.file; // достаём реальный путь на диске
+      if (file == null) continue;
+
+      final isVideo = asset.type == AssetType.video;
+      final isLast = i == assets.length - 1;
+
+      final content = (isLast && commentController.text.isNotEmpty)
+          ? "${file.path}|${commentController.text}"
+          : file.path;
+
+      await database.addMessage(noteId, content, isVideo);
     }
+    onUpdate();
+  }
+  /// Определяет, видео это или фото. Сначала смотрим mimeType от пикера
+  /// (на Android/iOS почти всегда заполнен), если пусто — по расширению файла.
+  bool _isVideoFile(XFile file) {
+    final mime = file.mimeType;
+    if (mime != null) return mime.startsWith('video/');
+
+    final path = file.path.toLowerCase();
+    return path.endsWith('.mp4') ||
+        path.endsWith('.mov') ||
+        path.endsWith('.avi') ||
+        path.endsWith('.mkv') ||
+        path.endsWith('.webm');
   }
 
   void dispose() {

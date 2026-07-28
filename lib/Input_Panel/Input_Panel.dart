@@ -36,13 +36,13 @@ class InputPanel extends StatelessWidget {
                   : () => controller.toggleRecording(context), // не записываем — начать
             ),
             IconButton(
-              icon: const Icon(Icons.image, color: Colors.blue),
-              onPressed: () => controller.addMedia(context, false),
+              icon: const Icon(Icons.attach_file, color: Colors.blue),
+              onPressed: () => controller.addMedia(context),
             ),
-            IconButton(
-              icon: const Icon(Icons.videocam, color: Colors.redAccent),
-              onPressed: () => controller.addMedia(context, true),
-            ),
+            // IconButton(
+            //   icon: const Icon(Icons.videocam, color: Colors.redAccent),
+            //   onPressed: () => controller.addMedia(context, true),
+            // ),
             Expanded(
               child: TextField(
                 controller: controller.messageController,
