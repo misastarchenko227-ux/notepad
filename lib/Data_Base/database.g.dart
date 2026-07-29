@@ -330,6 +330,17 @@ class $MessagesTable extends Messages with TableInfo<$MessagesTable, Message> {
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _groupIdMeta = const VerificationMeta(
+    'groupId',
+  );
+  @override
+  late final GeneratedColumn<int> groupId = GeneratedColumn<int>(
+    'group_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -338,6 +349,7 @@ class $MessagesTable extends Messages with TableInfo<$MessagesTable, Message> {
     isVideo,
     position,
     isFavorite,
+    groupId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -388,6 +400,12 @@ class $MessagesTable extends Messages with TableInfo<$MessagesTable, Message> {
         isFavorite.isAcceptableOrUnknown(data['is_favorite']!, _isFavoriteMeta),
       );
     }
+    if (data.containsKey('group_id')) {
+      context.handle(
+        _groupIdMeta,
+        groupId.isAcceptableOrUnknown(data['group_id']!, _groupIdMeta),
+      );
+    }
     return context;
   }
 
@@ -421,6 +439,10 @@ class $MessagesTable extends Messages with TableInfo<$MessagesTable, Message> {
         DriftSqlType.bool,
         data['${effectivePrefix}is_favorite'],
       )!,
+      groupId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}group_id'],
+      ),
     );
   }
 
@@ -437,6 +459,7 @@ class Message extends DataClass implements Insertable<Message> {
   final bool isVideo;
   final int position;
   final bool isFavorite;
+  final int? groupId;
   const Message({
     required this.id,
     required this.noteId,
@@ -444,6 +467,7 @@ class Message extends DataClass implements Insertable<Message> {
     required this.isVideo,
     required this.position,
     required this.isFavorite,
+    this.groupId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -454,6 +478,9 @@ class Message extends DataClass implements Insertable<Message> {
     map['is_video'] = Variable<bool>(isVideo);
     map['position'] = Variable<int>(position);
     map['is_favorite'] = Variable<bool>(isFavorite);
+    if (!nullToAbsent || groupId != null) {
+      map['group_id'] = Variable<int>(groupId);
+    }
     return map;
   }
 
@@ -465,6 +492,9 @@ class Message extends DataClass implements Insertable<Message> {
       isVideo: Value(isVideo),
       position: Value(position),
       isFavorite: Value(isFavorite),
+      groupId: groupId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(groupId),
     );
   }
 
@@ -480,6 +510,7 @@ class Message extends DataClass implements Insertable<Message> {
       isVideo: serializer.fromJson<bool>(json['isVideo']),
       position: serializer.fromJson<int>(json['position']),
       isFavorite: serializer.fromJson<bool>(json['isFavorite']),
+      groupId: serializer.fromJson<int?>(json['groupId']),
     );
   }
   @override
@@ -492,6 +523,7 @@ class Message extends DataClass implements Insertable<Message> {
       'isVideo': serializer.toJson<bool>(isVideo),
       'position': serializer.toJson<int>(position),
       'isFavorite': serializer.toJson<bool>(isFavorite),
+      'groupId': serializer.toJson<int?>(groupId),
     };
   }
 
@@ -502,6 +534,7 @@ class Message extends DataClass implements Insertable<Message> {
     bool? isVideo,
     int? position,
     bool? isFavorite,
+    Value<int?> groupId = const Value.absent(),
   }) => Message(
     id: id ?? this.id,
     noteId: noteId ?? this.noteId,
@@ -509,6 +542,7 @@ class Message extends DataClass implements Insertable<Message> {
     isVideo: isVideo ?? this.isVideo,
     position: position ?? this.position,
     isFavorite: isFavorite ?? this.isFavorite,
+    groupId: groupId.present ? groupId.value : this.groupId,
   );
   Message copyWithCompanion(MessagesCompanion data) {
     return Message(
@@ -520,6 +554,7 @@ class Message extends DataClass implements Insertable<Message> {
       isFavorite: data.isFavorite.present
           ? data.isFavorite.value
           : this.isFavorite,
+      groupId: data.groupId.present ? data.groupId.value : this.groupId,
     );
   }
 
@@ -531,14 +566,15 @@ class Message extends DataClass implements Insertable<Message> {
           ..write('content: $content, ')
           ..write('isVideo: $isVideo, ')
           ..write('position: $position, ')
-          ..write('isFavorite: $isFavorite')
+          ..write('isFavorite: $isFavorite, ')
+          ..write('groupId: $groupId')
           ..write(')'))
         .toString();
   }
 
   @override
   int get hashCode =>
-      Object.hash(id, noteId, content, isVideo, position, isFavorite);
+      Object.hash(id, noteId, content, isVideo, position, isFavorite, groupId);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -548,7 +584,8 @@ class Message extends DataClass implements Insertable<Message> {
           other.content == this.content &&
           other.isVideo == this.isVideo &&
           other.position == this.position &&
-          other.isFavorite == this.isFavorite);
+          other.isFavorite == this.isFavorite &&
+          other.groupId == this.groupId);
 }
 
 class MessagesCompanion extends UpdateCompanion<Message> {
@@ -558,6 +595,7 @@ class MessagesCompanion extends UpdateCompanion<Message> {
   final Value<bool> isVideo;
   final Value<int> position;
   final Value<bool> isFavorite;
+  final Value<int?> groupId;
   const MessagesCompanion({
     this.id = const Value.absent(),
     this.noteId = const Value.absent(),
@@ -565,6 +603,7 @@ class MessagesCompanion extends UpdateCompanion<Message> {
     this.isVideo = const Value.absent(),
     this.position = const Value.absent(),
     this.isFavorite = const Value.absent(),
+    this.groupId = const Value.absent(),
   });
   MessagesCompanion.insert({
     this.id = const Value.absent(),
@@ -573,6 +612,7 @@ class MessagesCompanion extends UpdateCompanion<Message> {
     this.isVideo = const Value.absent(),
     this.position = const Value.absent(),
     this.isFavorite = const Value.absent(),
+    this.groupId = const Value.absent(),
   }) : noteId = Value(noteId),
        content = Value(content);
   static Insertable<Message> custom({
@@ -582,6 +622,7 @@ class MessagesCompanion extends UpdateCompanion<Message> {
     Expression<bool>? isVideo,
     Expression<int>? position,
     Expression<bool>? isFavorite,
+    Expression<int>? groupId,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -590,6 +631,7 @@ class MessagesCompanion extends UpdateCompanion<Message> {
       if (isVideo != null) 'is_video': isVideo,
       if (position != null) 'position': position,
       if (isFavorite != null) 'is_favorite': isFavorite,
+      if (groupId != null) 'group_id': groupId,
     });
   }
 
@@ -600,6 +642,7 @@ class MessagesCompanion extends UpdateCompanion<Message> {
     Value<bool>? isVideo,
     Value<int>? position,
     Value<bool>? isFavorite,
+    Value<int?>? groupId,
   }) {
     return MessagesCompanion(
       id: id ?? this.id,
@@ -608,6 +651,7 @@ class MessagesCompanion extends UpdateCompanion<Message> {
       isVideo: isVideo ?? this.isVideo,
       position: position ?? this.position,
       isFavorite: isFavorite ?? this.isFavorite,
+      groupId: groupId ?? this.groupId,
     );
   }
 
@@ -632,6 +676,9 @@ class MessagesCompanion extends UpdateCompanion<Message> {
     if (isFavorite.present) {
       map['is_favorite'] = Variable<bool>(isFavorite.value);
     }
+    if (groupId.present) {
+      map['group_id'] = Variable<int>(groupId.value);
+    }
     return map;
   }
 
@@ -643,7 +690,8 @@ class MessagesCompanion extends UpdateCompanion<Message> {
           ..write('content: $content, ')
           ..write('isVideo: $isVideo, ')
           ..write('position: $position, ')
-          ..write('isFavorite: $isFavorite')
+          ..write('isFavorite: $isFavorite, ')
+          ..write('groupId: $groupId')
           ..write(')'))
         .toString();
   }
@@ -1028,6 +1076,7 @@ typedef $$MessagesTableCreateCompanionBuilder =
       Value<bool> isVideo,
       Value<int> position,
       Value<bool> isFavorite,
+      Value<int?> groupId,
     });
 typedef $$MessagesTableUpdateCompanionBuilder =
     MessagesCompanion Function({
@@ -1037,6 +1086,7 @@ typedef $$MessagesTableUpdateCompanionBuilder =
       Value<bool> isVideo,
       Value<int> position,
       Value<bool> isFavorite,
+      Value<int?> groupId,
     });
 
 class $$MessagesTableFilterComposer
@@ -1075,6 +1125,11 @@ class $$MessagesTableFilterComposer
 
   ColumnFilters<bool> get isFavorite => $composableBuilder(
     column: $table.isFavorite,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get groupId => $composableBuilder(
+    column: $table.groupId,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -1117,6 +1172,11 @@ class $$MessagesTableOrderingComposer
     column: $table.isFavorite,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get groupId => $composableBuilder(
+    column: $table.groupId,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$MessagesTableAnnotationComposer
@@ -1147,6 +1207,9 @@ class $$MessagesTableAnnotationComposer
     column: $table.isFavorite,
     builder: (column) => column,
   );
+
+  GeneratedColumn<int> get groupId =>
+      $composableBuilder(column: $table.groupId, builder: (column) => column);
 }
 
 class $$MessagesTableTableManager
@@ -1183,6 +1246,7 @@ class $$MessagesTableTableManager
                 Value<bool> isVideo = const Value.absent(),
                 Value<int> position = const Value.absent(),
                 Value<bool> isFavorite = const Value.absent(),
+                Value<int?> groupId = const Value.absent(),
               }) => MessagesCompanion(
                 id: id,
                 noteId: noteId,
@@ -1190,6 +1254,7 @@ class $$MessagesTableTableManager
                 isVideo: isVideo,
                 position: position,
                 isFavorite: isFavorite,
+                groupId: groupId,
               ),
           createCompanionCallback:
               ({
@@ -1199,6 +1264,7 @@ class $$MessagesTableTableManager
                 Value<bool> isVideo = const Value.absent(),
                 Value<int> position = const Value.absent(),
                 Value<bool> isFavorite = const Value.absent(),
+                Value<int?> groupId = const Value.absent(),
               }) => MessagesCompanion.insert(
                 id: id,
                 noteId: noteId,
@@ -1206,6 +1272,7 @@ class $$MessagesTableTableManager
                 isVideo: isVideo,
                 position: position,
                 isFavorite: isFavorite,
+                groupId: groupId,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

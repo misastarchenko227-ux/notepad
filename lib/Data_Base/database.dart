@@ -19,6 +19,7 @@ class Messages extends Table {
   BoolColumn get isVideo => boolean().withDefault(const Constant(false))();
   IntColumn get position => integer().withDefault(const Constant(0))();
   BoolColumn get isFavorite => boolean().withDefault(const Constant(false))();
+  IntColumn get groupId => integer().nullable()();
 }
 
 class Settings extends Table {
@@ -40,7 +41,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration {
@@ -50,7 +51,7 @@ class AppDatabase extends _$AppDatabase {
       },
       onUpgrade: (m, from, to) async {
         // Если версия была меньше 6, добавляем колонку (безопасный апгрейд)
-        if (from < 6) {
+        if (from < 7) {
           try {
             await m.addColumn(messages, messages.isFavorite);
           } catch (e) {
@@ -125,11 +126,12 @@ class AppDatabase extends _$AppDatabase {
     return (select(messages)..where((t) => t.noteId.equals(noteId))).watch();
   }
 
-  Future<int> addMessage(int noteId, String content, bool isVideo) {
+  Future<int> addMessage(int noteId, String content, bool isVideo, {int? groupId}) {
     return into(messages).insert(MessagesCompanion.insert(
       noteId: noteId,
       content: content,
       isVideo: Value(isVideo),
+      groupId: Value(groupId), // ← новое
     ));
   }
 

@@ -33,6 +33,7 @@ dependencies:
   image_picker: ^1.0.7
   video_player: ^2.8.1
   wechat_assets_picker: ^9.3.0
+  video_thumbnail: ^0.5.3
   cupertino_icons: ^1.0.8
   sqflite: ^2.3.0
   path: ^1.9.0

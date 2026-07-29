@@ -291,6 +291,12 @@ class NoteDetailsController {
 
     if (confirmed != true) return;
 
+    // Если файлов больше одного — присваиваем всем один groupId,
+    // чтобы на экране они отрисовались одним пакетом (гридом), а не по одному.
+    // Одиночный файл groupId не получает — рисуется как раньше, отдельным пузырём.
+    final int? groupId =
+    assets.length > 1 ? DateTime.now().millisecondsSinceEpoch : null;
+
     for (var i = 0; i < assets.length; i++) {
       final asset = assets[i];
       final File? file = await asset.file; // достаём реальный путь на диске
@@ -303,7 +309,7 @@ class NoteDetailsController {
           ? "${file.path}|${commentController.text}"
           : file.path;
 
-      await database.addMessage(noteId, content, isVideo);
+      await database.addMessage(noteId, content, isVideo, groupId: groupId);
     }
     onUpdate();
   }
