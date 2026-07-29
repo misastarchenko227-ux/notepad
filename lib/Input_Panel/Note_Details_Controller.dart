@@ -57,7 +57,28 @@ class NoteDetailsController {
     clearSelection();
   }
 
+  /// Удаляет файлы с диска для списка сообщений
+  Future<void> _deleteMessageFiles(List<Message> messages) async {
+    for (var msg in messages) {
+      // Путь к файлу обычно находится в первой части content до разделителя |
+      // Это работает для фото, видео и голосовых сообщений.
+      final path = msg.content.split('|').first;
+      if (path.isNotEmpty) {
+        final file = File(path);
+        try {
+          if (await file.exists()) {
+            await file.delete();
+          }
+        } catch (e) {
+          debugPrint("Ошибка при удалении файла: $e");
+        }
+      }
+    }
+  }
+
   Future<void> deleteSelectedMessages() async {
+    final messagesToDelete = currentMessages.where((m) => selectedMessageIds.contains(m.id)).toList();
+    await _deleteMessageFiles(messagesToDelete);
     await database.deleteMessagesByIds(selectedMessageIds);
     clearSelection();
   }

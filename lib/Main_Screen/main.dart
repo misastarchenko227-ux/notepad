@@ -194,7 +194,7 @@ class _MyNotesPageState extends State<MyNotesPage> {
                                   Icons.delete_outline,
                                   color: Colors.red,
                                 ),
-                                onPressed: () => database.deleteNote(item),
+                                onPressed: () => database.deleteNoteWithFiles(item),
                               ),
                               onTap: () {
                                 Navigator.push(

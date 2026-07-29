@@ -50,12 +50,10 @@ class AppDatabase extends _$AppDatabase {
         await m.createAll();
       },
       onUpgrade: (m, from, to) async {
-        // Если версия была меньше 6, добавляем колонку (безопасный апгрейд)
         if (from < 7) {
           try {
             await m.addColumn(messages, messages.isFavorite);
           } catch (e) {
-            // Если колонка уже есть, просто пропускаем
             print("Migration info: Column isFavorite already exists.");
           }
         }
@@ -65,7 +63,6 @@ class AppDatabase extends _$AppDatabase {
 
   Stream<List<MessageWithNote>> watchFavoriteMessagesWithNotes() {
     final query = select(messages).join([
-      // Исправлено: используем .equalsExp() для сравнения двух колонок
       innerJoin(notes, notes.id.equalsExp(messages.noteId)),
     ]);
 
@@ -122,6 +119,31 @@ class AppDatabase extends _$AppDatabase {
     return delete(notes).delete(note);
   }
 
+  /// Удаляет заметку и все связанные с ней файлы сообщений
+  Future<void> deleteNoteWithFiles(Note note) async {
+    // Получаем все сообщения этой заметки
+    final noteMessages = await (select(messages)..where((t) => t.noteId.equals(note.id))).get();
+    
+    // Удаляем физические файлы
+    for (var msg in noteMessages) {
+      final path = msg.content.split('|').first;
+      if (path.isNotEmpty && (path.contains('/') || path.contains('\\'))) {
+        final file = File(path);
+        try {
+          if (await file.exists()) {
+            await file.delete();
+          }
+        } catch (e) {
+          print("Ошибка при удалении файла: $e");
+        }
+      }
+    }
+    
+    // Удаляем сообщения и саму заметку из БД
+    await (delete(messages)..where((t) => t.noteId.equals(note.id))).go();
+    await delete(notes).delete(note);
+  }
+
   Stream<List<Message>> watchMessagesForNote(int noteId) {
     return (select(messages)..where((t) => t.noteId.equals(noteId))).watch();
   }
@@ -131,7 +153,7 @@ class AppDatabase extends _$AppDatabase {
       noteId: noteId,
       content: content,
       isVideo: Value(isVideo),
-      groupId: Value(groupId), // ← новое
+      groupId: Value(groupId),
     ));
   }
 
