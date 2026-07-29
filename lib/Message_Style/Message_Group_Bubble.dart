@@ -1,19 +1,19 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:notepad/Data_Base/database.dart';
 import 'package:notepad/Main_Functions/Photo/Full_Screen_Image.dart';
 
-import '../Main_Functions/LinkReader.dart';
+import 'dart:typed_data';
 
-/// Пузырь для пакета из нескольких фото/видео, выбранных за один раз —
-/// вместо N отдельных пузырей рисует один грид (как альбом в Telegram).
+import '../Main_Functions/LinkReader.dart';
+import '../Main_Functions/video/MediaItem.dart';
+
 class MessageGroupBubble extends StatelessWidget {
   final List<Message> group;
   final bool isSelectionMode;
   final Set<int> selectedIds;
-  final List<String> allMediaPaths;
+  final List<MediaItem> allMediaItems; // ← было List<String> allMediaPaths
   final void Function(int messageId) onToggleSelection;
 
   const MessageGroupBubble({
@@ -21,7 +21,7 @@ class MessageGroupBubble extends StatelessWidget {
     required this.group,
     required this.isSelectionMode,
     required this.selectedIds,
-    required this.allMediaPaths,
+    required this.allMediaItems, // ← было allMediaPaths
     required this.onToggleSelection,
   });
 
@@ -71,7 +71,7 @@ class MessageGroupBubble extends StatelessWidget {
                   final msg = group[index];
                   final path = msg.content.split('|')[0];
                   final isSelected = selectedIds.contains(msg.id);
-                  final globalIndex = allMediaPaths.indexOf(path);
+                  final globalIndex = allMediaItems.indexWhere((mi) => mi.msgId == msg.id);
 
                   return GestureDetector(
                     onLongPress: () => onToggleSelection(msg.id),
@@ -84,7 +84,7 @@ class MessageGroupBubble extends StatelessWidget {
                         context,
                         MaterialPageRoute(
                           builder: (context) => Full_Screen_Image(
-                            paths: allMediaPaths,
+                            items: allMediaItems, // ← было paths
                             initialIndex: globalIndex < 0 ? 0 : globalIndex,
                           ),
                         ),
@@ -135,8 +135,6 @@ class MessageGroupBubble extends StatelessWidget {
   }
 }
 
-/// Достаёт кадр из видеофайла и показывает его как обычную картинку.
-/// Поверх кадра рисуем иконку play, чтобы было понятно, что это видео.
 class _VideoThumbnail extends StatefulWidget {
   final String path;
 
@@ -159,7 +157,7 @@ class _VideoThumbnailState extends State<_VideoThumbnail> {
     final bytes = await VideoThumbnail.thumbnailData(
       video: widget.path,
       imageFormat: ImageFormat.JPEG,
-      maxWidth: 200, // превью маленькое — этого достаточно для сетки
+      maxWidth: 200,
       quality: 60,
     );
     if (mounted) {

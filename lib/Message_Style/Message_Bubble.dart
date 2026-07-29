@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:notepad/Data_Base/database.dart';
 import 'package:notepad/Favorites_Screen/Message_Content.dart';
 
+import '../Main_Functions/video/MediaItem.dart'; // ← новый импорт
 
 class Message_Style extends StatelessWidget {
   final Message msg;
@@ -9,8 +10,9 @@ class Message_Style extends StatelessWidget {
   final bool isSelectionMode;
   final VoidCallback onLongPress;
   final VoidCallback onTap;
-  final List<String> mediaPaths; // ← добавь
+  final List<MediaItem> mediaItems; // ← было List<String> mediaPaths
   final int mediaIndex;
+
   const Message_Style({
     super.key,
     required this.msg,
@@ -18,7 +20,7 @@ class Message_Style extends StatelessWidget {
     required this.isSelectionMode,
     required this.onLongPress,
     required this.onTap,
-    required this.mediaPaths,    // ← добавь
+    required this.mediaItems, // ← было mediaPaths
     required this.mediaIndex,
   });
 
@@ -51,9 +53,9 @@ class Message_Style extends StatelessWidget {
             child: MessageContent(
               msg: msg,
               isSelectionMode: isSelectionMode,
-              onToggleSelection: onLongPress, // ← передаём тот же что у пузыря
-              mediaPaths: mediaPaths,   // ← добавь
-              mediaIndex: mediaIndex,   // ← добавь
+              onToggleSelection: onLongPress,
+              mediaItems: mediaItems, // ← было mediaPaths
+              mediaIndex: mediaIndex,
             ),
           ),
           if (msg.isFavorite)

@@ -4,22 +4,25 @@ import 'package:notepad/Data_Base/database.dart';
 import 'package:notepad/Main_Functions/Photo/PhotoPreview.dart';
 import 'package:notepad/Main_Functions/VoiceMessagePlayer.dart';
 import 'package:notepad/Main_Functions/video/VideoPreview.dart';
-import '../Main_Functions/LinkReader.dart'; // ← новый импорт
+
+
+import '../Main_Functions/LinkReader.dart';
+import '../Main_Functions/video/MediaItem.dart'; // ← новый импорт
 
 class MessageContent extends StatelessWidget {
   final Message msg;
-  final bool isSelectionMode;        // для заметок
-  final VoidCallback? onToggleSelection; // для заметок
-  final List<String>? mediaPaths;    // для заметок
-  final int? mediaIndex;             // для заметок
-  final VoidCallback? onImageTap;    // для избранного
+  final bool isSelectionMode;
+  final VoidCallback? onToggleSelection;
+  final List<MediaItem>? mediaItems; // ← было List<String>? mediaPaths
+  final int? mediaIndex;
+  final VoidCallback? onImageTap;
 
   const MessageContent({
     super.key,
     required this.msg,
-    this.isSelectionMode = false,    // по умолчанию false
+    this.isSelectionMode = false,
     this.onToggleSelection,
-    this.mediaPaths,
+    this.mediaItems,
     this.mediaIndex,
     this.onImageTap,
   });
@@ -36,10 +39,6 @@ class MessageContent extends StatelessWidget {
       decoration: TextDecoration.underline,
     );
 
-    // Голосовое
-    // Голосовое — вторая часть после '|' это волна (амплитуды через запятую),
-    // а не подпись, как у фото/видео. Парсим отдельно от comment.
-    // Голосовое: content = path|waveform|caption (caption опционален)
     if (path.endsWith('.m4a') || path.endsWith('.wav')) {
       final String? waveformRaw = parts.length > 1 ? parts[1] : null;
       final String? voiceCaption = parts.length > 2 && parts[2].isNotEmpty ? parts[2] : null;
@@ -61,7 +60,6 @@ class MessageContent extends StatelessWidget {
       );
     }
 
-    // Видео
     if (msg.isVideo) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -71,7 +69,7 @@ class MessageContent extends StatelessWidget {
             videoPath: path,
             initialPosition: msg.position,
             isFullScreen: false,
-            allMediaPaths: mediaPaths,
+            allMediaItems: mediaItems, // ← было allMediaPaths
             currentIndex: mediaIndex,
             isSelectionMode: isSelectionMode,
             onTapInSelection: onToggleSelection,
@@ -85,13 +83,11 @@ class MessageContent extends StatelessWidget {
       );
     }
 
-    // Фото
     final p = path.toLowerCase();
     if (p.endsWith('.jpg') || p.endsWith('.jpeg') ||
         p.endsWith('.png') || p.endsWith('.webp')) {
 
-      // Если есть mediaPaths — мы в заметке, используем PhotoPreview
-      if (mediaPaths != null && mediaIndex != null) {
+      if (mediaItems != null && mediaIndex != null) {
         return PhotoPreview(
           msgId: msg.id,
           photoPath: path,
@@ -99,12 +95,11 @@ class MessageContent extends StatelessWidget {
           isSelectionMode: isSelectionMode,
           onLongPress: () {},
           onTapInSelection: onToggleSelection ?? () {},
-          allMediaPaths: mediaPaths!,
+          allMediaItems: mediaItems!, // ← было allMediaPaths
           currentIndex: mediaIndex!,
         );
       }
 
-      // Иначе мы в избранном — простой GestureDetector
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -135,7 +130,6 @@ class MessageContent extends StatelessWidget {
       );
     }
 
-    // Текст
     return LinkifiedText(text: msg.content, textStyle: textStyle, linkStyle: linkStyle);
   }
 }

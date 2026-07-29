@@ -3,7 +3,9 @@ import 'package:notepad/Data_Base/database.dart';
 import 'package:notepad/Input_Panel/Note_Details_Controller.dart';
 import 'package:notepad/Main_Screen/main.dart';
 import 'package:notepad/Message_Style/Message_Bubble.dart';
-import 'package:notepad/Message_Style/Message_Group_Bubble.dart'; // ← новый импорт
+import 'package:notepad/Message_Style/Message_Group_Bubble.dart';
+
+import '../Main_Functions/video/MediaItem.dart'; // ← новый импорт
 
 class MessageList extends StatelessWidget {
   final NoteDetailsController controller;
@@ -27,21 +29,24 @@ class MessageList extends StatelessWidget {
           );
         }
 
-        // Собираем все медиафайлы (фото + видео) в один список
-        final List<String> mediaPaths = controller.currentMessages
+        // Собираем все медиафайлы (фото + видео) вместе с id сообщения
+        // и сохранённой позицией — это нужно, чтобы Full_Screen_Image
+        // мог продолжить видео с того места, где пользователь остановился.
+        final List<MediaItem> mediaItems = controller.currentMessages
             .where((m) {
           final path = m.content.split('|')[0];
           return m.isVideo ||
               path.endsWith('.jpg') || path.endsWith('.jpeg') ||
               path.endsWith('.png') || path.endsWith('.webp');
         })
-            .map((m) => m.content.split('|')[0])
+            .map((m) => MediaItem(
+          path: m.content.split('|')[0],
+          msgId: m.id,
+          initialPosition: m.position,
+        ))
             .toList();
 
-        // Сообщения с одинаковым groupId, идущие подряд, объединяем в один
-        // элемент-пакет — они всегда идут подряд, потому что addMedia
-        // сохраняет их последовательным циклом с await.
-        final List<Object> displayItems = []; // Message | List<Message>
+        final List<Object> displayItems = [];
         int i = 0;
         while (i < controller.currentMessages.length) {
           final msg = controller.currentMessages[i];
@@ -67,31 +72,31 @@ class MessageList extends StatelessWidget {
           itemBuilder: (context, index) {
             final item = displayItems[index];
 
-            // Пакет из нескольких файлов — рисуем гридом
             if (item is List<Message>) {
               return MessageGroupBubble(
                 group: item,
                 isSelectionMode: controller.isSelectionMode,
                 selectedIds: controller.selectedMessageIds,
-                allMediaPaths: mediaPaths,
+                allMediaItems: mediaItems, // ← было allMediaPaths
                 onToggleSelection: (id) => controller.toggleSelection(id),
               );
             }
 
-            // Одиночное сообщение — как раньше
             final msg = item as Message;
             final path = msg.content.split('|')[0];
             final isMedia = msg.isVideo ||
                 path.endsWith('.jpg') || path.endsWith('.jpeg') ||
                 path.endsWith('.png') || path.endsWith('.webp');
-            final mediaIndex = isMedia ? mediaPaths.indexOf(path) : 0;
+            final mediaIndex = isMedia
+                ? mediaItems.indexWhere((mi) => mi.msgId == msg.id)
+                : 0;
 
             return Message_Style(
               msg: msg,
               isSelected: controller.selectedMessageIds.contains(msg.id),
               isSelectionMode: controller.isSelectionMode,
-              mediaPaths: mediaPaths,     // ← передаём список
-              mediaIndex: mediaIndex,     // ← передаём индекс
+              mediaItems: mediaItems, // ← было mediaPaths
+              mediaIndex: mediaIndex,
               onLongPress: () => controller.toggleSelection(msg.id),
               onTap: () => controller.isSelectionMode
                   ? controller.toggleSelection(msg.id)

@@ -4,10 +4,13 @@ import 'package:notepad/Data_Base/database.dart';
 import 'package:notepad/Favorites_Screen/Message_Content.dart';
 import 'package:notepad/Input_Panel/Note_Details_Screen.dart';
 import 'package:notepad/Main_Functions/Photo/Full_Screen_Image.dart';
+import 'package:notepad/Main_Functions/video/MediaItem.dart';
 import 'package:notepad/Main_Screen/main.dart';
 
 class FavoritesScreen extends StatelessWidget {
   const FavoritesScreen({super.key});
+
+
 
   bool _isMedia(Message msg) {
     if (msg.isVideo) return true;
@@ -93,15 +96,29 @@ class FavoritesScreen extends StatelessWidget {
                   children: [
                     MessageContent(
                       msg: msg,
-                      mediaPaths: allMediaPaths,
+                      mediaItems: allMediaPaths
+                          .map((path) => MediaItem(
+                        path: path,
+                        msgId: msg.id,
+                        initialPosition: msg.position,
+                      ))
+                          .toList(),
                       mediaIndex: mediaIndex,
                       onImageTap: () {
                         if (mediaIndex != null) {
+                          final mediaItems = allMediaPaths
+                              .map((path) => MediaItem(
+                            path: path,
+                            msgId: msg.id,
+                            initialPosition: msg.position,
+                          ))
+                              .toList();
+
                           Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (context) => Full_Screen_Image(
-                                paths: allMediaPaths,
+                                items: mediaItems,
                                 initialIndex: mediaIndex!,
                               ),
                             ),

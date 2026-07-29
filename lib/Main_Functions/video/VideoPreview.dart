@@ -7,19 +7,21 @@ import 'package:notepad/Main_Screen/main.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:video_player/video_player.dart';
 
+import 'MediaItem.dart';
+
 class VideoPreview extends StatefulWidget {
   final int msgId;
   final String videoPath;
   final int initialPosition;
   final VideoPlayerController? controller;
   final bool isFullScreen;
-  final List<String>? allMediaPaths;
+  final List<MediaItem>? allMediaItems; // ← было List<String>? allMediaPaths
   final int? currentIndex;
   final bool isSelectionMode;
   final VoidCallback? onTapInSelection;
   final VoidCallback? onVideoEnded;
   final bool autoPlay;
-  final bool manageOrientation; // ← новое: false, если ориентацию контролирует родитель (Full_Screen_Image)
+  final bool manageOrientation;
 
   const VideoPreview({
     Key? key,
@@ -28,13 +30,13 @@ class VideoPreview extends StatefulWidget {
     this.initialPosition = 0,
     this.controller,
     this.isFullScreen = false,
-    this.allMediaPaths,
+    this.allMediaItems, // ← было allMediaPaths
     this.currentIndex,
     this.isSelectionMode = false,
     this.onTapInSelection,
     this.onVideoEnded,
     this.autoPlay = false,
-    this.manageOrientation = true, // ← новое: по умолчанию управляет сам (для отдельной кнопки fullscreen)
+    this.manageOrientation = true,
   }) : super(key: key);
 
   @override
@@ -73,9 +75,6 @@ class _VideoPreviewState extends State<VideoPreview> {
     _controller.addListener(_handlePlaybackChange);
     _controller.addListener(_handleVideoEnd);
 
-    // Ориентацию задаём только если сами за неё отвечаем — когда виджет
-    // используется внутри Full_Screen_Image, там за это отвечает родитель,
-    // и лишний вызов здесь приводил к конфликту при быстром свайпе.
     if (widget.isFullScreen && widget.manageOrientation) {
       SystemChrome.setPreferredOrientations([
         DeviceOrientation.landscapeLeft,
@@ -141,17 +140,8 @@ class _VideoPreviewState extends State<VideoPreview> {
     _controller.removeListener(_handleVideoEnd);
     WakelockPlus.disable();
     _savePosition();
-
-    // Останавливаем воспроизведение сразу, не дожидаясь фактического
-    // освобождения ресурсов — иначе звук/видео может доиграть на долю
-    // секунды дольше, чем виден сам виджет.
     _controller.pause();
 
-    // Раньше здесь стояло "!widget.isFullScreen && widget.controller == null" —
-    // из-за этого контроллер, созданный самим виджетом (widget.controller == null),
-    // не освобождался, если isFullScreen был true, и видео продолжало играть
-    // в фоне после ухода со страницы. Единственное, что реально важно проверять —
-    // наш ли это контроллер (widget.controller == null), а не режим отображения.
     if (widget.controller == null) {
       _controller.dispose();
     }
@@ -194,14 +184,14 @@ class _VideoPreviewState extends State<VideoPreview> {
             onTap: () {
               if (widget.isSelectionMode) {
                 widget.onTapInSelection?.call();
-              } else if (widget.allMediaPaths != null && widget.currentIndex != null) {
+              } else if (widget.allMediaItems != null && widget.currentIndex != null) {
                 _savePosition();
                 _controller.pause();
                 Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) => Full_Screen_Image(
-                      paths: widget.allMediaPaths!,
+                      items: widget.allMediaItems!, // ← было paths
                       initialIndex: widget.currentIndex!,
                     ),
                   ),
@@ -237,12 +227,12 @@ class _VideoPreviewState extends State<VideoPreview> {
                 onPressed: () {
                   _savePosition();
                   _controller.pause();
-                  if (widget.allMediaPaths != null && widget.currentIndex != null) {
+                  if (widget.allMediaItems != null && widget.currentIndex != null) {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => Full_Screen_Image(
-                          paths: widget.allMediaPaths!,
+                          items: widget.allMediaItems!, // ← было paths
                           initialIndex: widget.currentIndex!,
                         ),
                       ),

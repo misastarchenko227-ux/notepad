@@ -3,13 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:notepad/Main_Functions/video/VideoPreview.dart';
 
+import '../video/MediaItem.dart'; // ← новый импорт
+
 class Full_Screen_Image extends StatefulWidget {
-  final List<String> paths;
+  final List<MediaItem> items; // ← было List<String> paths
   final int initialIndex;
 
   const Full_Screen_Image({
     super.key,
-    required this.paths,
+    required this.items, // ← было paths
     required this.initialIndex,
   });
 
@@ -21,21 +23,19 @@ class _Full_Screen_ImageState extends State<Full_Screen_Image> {
   late PageController _pageController;
   late int _currentIndex;
   int? _autoPlayIndex;
-  bool? _lastAppliedIsVideo; // ← новое: чтобы не дёргать ориентацию повторно без надобности
+  bool? _lastAppliedIsVideo;
 
   @override
   void initState() {
     super.initState();
     _currentIndex = widget.initialIndex;
     _pageController = PageController(initialPage: widget.initialIndex);
-    _applyOrientationForIndex(_currentIndex); // ← новое: сразу задаём ориентацию под стартовую страницу
+    _applyOrientationForIndex(_currentIndex);
   }
 
   @override
   void dispose() {
     _pageController.dispose();
-    // Возвращаем portrait при выходе из галереи целиком — какая бы страница
-    // ни была открыта в момент закрытия.
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     super.dispose();
@@ -46,15 +46,9 @@ class _Full_Screen_ImageState extends State<Full_Screen_Image> {
     return p.endsWith('.mp4') || p.endsWith('.mov') || p.endsWith('.avi') || p.endsWith('.mkv');
   }
 
-  /// Единая точка управления ориентацией экрана — раньше каждая страница
-  /// VideoPreview сама её выставляла и сбрасывала, из-за чего при быстром
-  /// свайпе между несколькими видео происходили конфликтующие вызовы
-  /// SystemChrome почти одновременно, и экран "прыгал" между portrait/landscape.
-  /// Теперь ориентацию меняет только этот метод, и только когда тип
-  /// страницы (видео/фото) реально изменился.
   void _applyOrientationForIndex(int index) {
-    final bool isVideo = _isVideo(widget.paths[index]);
-    if (_lastAppliedIsVideo == isVideo) return; // тип не поменялся — ничего не трогаем
+    final bool isVideo = _isVideo(widget.items[index].path);
+    if (_lastAppliedIsVideo == isVideo) return;
     _lastAppliedIsVideo = isVideo;
 
     if (isVideo) {
@@ -70,7 +64,7 @@ class _Full_Screen_ImageState extends State<Full_Screen_Image> {
   }
 
   void _goToNextIfAvailable() {
-    if (_currentIndex < widget.paths.length - 1) {
+    if (_currentIndex < widget.items.length - 1) {
       setState(() => _autoPlayIndex = _currentIndex + 1);
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
@@ -88,14 +82,14 @@ class _Full_Screen_ImageState extends State<Full_Screen_Image> {
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
         title: Text(
-          '${_currentIndex + 1} / ${widget.paths.length}',
+          '${_currentIndex + 1} / ${widget.items.length}',
           style: const TextStyle(color: Colors.white),
         ),
       ),
       body: PageView.builder(
         controller: _pageController,
         physics: const BouncingScrollPhysics(),
-        itemCount: widget.paths.length,
+        itemCount: widget.items.length,
         onPageChanged: (index) {
           setState(() {
             _currentIndex = index;
@@ -103,19 +97,20 @@ class _Full_Screen_ImageState extends State<Full_Screen_Image> {
               _autoPlayIndex = null;
             }
           });
-          _applyOrientationForIndex(index); // ← новое: меняем ориентацию тут, а не в самом VideoPreview
+          _applyOrientationForIndex(index);
         },
         itemBuilder: (context, index) {
-          final path = widget.paths[index];
+          final item = widget.items[index];
 
-          if (_isVideo(path)) {
+          if (_isVideo(item.path)) {
             return VideoPreview(
-              msgId: 0,
-              videoPath: path,
+              msgId: item.msgId, // ← было 0
+              videoPath: item.path,
+              initialPosition: item.initialPosition, // ← новое: продолжаем с сохранённого места
               isFullScreen: true,
               onVideoEnded: _goToNextIfAvailable,
               autoPlay: index == _autoPlayIndex,
-              manageOrientation: false, // ← новое: ориентацию контролирует Full_Screen_Image, не сам виджет
+              manageOrientation: false,
             );
           }
 
@@ -124,7 +119,7 @@ class _Full_Screen_ImageState extends State<Full_Screen_Image> {
             maxScale: 5.0,
             child: Center(
               child: Image.file(
-                File(path),
+                File(item.path),
                 errorBuilder: (context, error, stackTrace) => const Icon(
                   Icons.broken_image,
                   color: Colors.white54,
