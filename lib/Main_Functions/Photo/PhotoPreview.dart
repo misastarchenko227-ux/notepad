@@ -2,6 +2,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:notepad/Main_Functions/Photo/Full_Screen_Image.dart';
 
+import '../LinkReader.dart'; // ← новый импорт
+
 class PhotoPreview extends StatelessWidget {
   final int msgId;
   final String photoPath;
@@ -28,6 +30,10 @@ class PhotoPreview extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textStyle = TextStyle(fontSize: 16, color: colorScheme.onSurface);
+    final linkStyle = textStyle.copyWith(
+      color: Colors.blue,
+      decoration: TextDecoration.underline,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -61,7 +67,7 @@ class PhotoPreview extends StatelessWidget {
         if (comment != null)
           Padding(
             padding: const EdgeInsets.only(top: 8),
-            child: Text(comment!, style: textStyle),
+            child: LinkifiedText(text: comment!, textStyle: textStyle, linkStyle: linkStyle),
           ),
       ],
     );

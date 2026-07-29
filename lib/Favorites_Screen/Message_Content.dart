@@ -4,6 +4,7 @@ import 'package:notepad/Data_Base/database.dart';
 import 'package:notepad/Main_Functions/Photo/PhotoPreview.dart';
 import 'package:notepad/Main_Functions/VoiceMessagePlayer.dart';
 import 'package:notepad/Main_Functions/video/VideoPreview.dart';
+import '../Main_Functions/LinkReader.dart'; // ← новый импорт
 
 class MessageContent extends StatelessWidget {
   final Message msg;
@@ -30,6 +31,10 @@ class MessageContent extends StatelessWidget {
     final String path = parts[0];
     final String? comment = parts.length > 1 ? parts[1] : null;
     final TextStyle textStyle = TextStyle(fontSize: 16, color: colorScheme.onSurface);
+    final TextStyle linkStyle = textStyle.copyWith(
+      color: Colors.blue,
+      decoration: TextDecoration.underline,
+    );
 
     // Голосовое
     // Голосовое — вторая часть после '|' это волна (амплитуды через запятую),
@@ -50,7 +55,7 @@ class MessageContent extends StatelessWidget {
           if (voiceCaption != null)
             Padding(
               padding: const EdgeInsets.only(top: 8),
-              child: Text(voiceCaption, style: textStyle),
+              child: LinkifiedText(text: voiceCaption, textStyle: textStyle, linkStyle: linkStyle),
             ),
         ],
       );
@@ -74,7 +79,7 @@ class MessageContent extends StatelessWidget {
           if (comment != null)
             Padding(
               padding: const EdgeInsets.only(top: 8),
-              child: Text(comment, style: textStyle),
+              child: LinkifiedText(text: comment, textStyle: textStyle, linkStyle: linkStyle),
             ),
         ],
       );
@@ -124,13 +129,13 @@ class MessageContent extends StatelessWidget {
           if (comment != null)
             Padding(
               padding: const EdgeInsets.only(top: 8),
-              child: Text(comment, style: textStyle),
+              child: LinkifiedText(text: comment, textStyle: textStyle, linkStyle: linkStyle),
             ),
         ],
       );
     }
 
     // Текст
-    return Text(msg.content, style: textStyle);
+    return LinkifiedText(text: msg.content, textStyle: textStyle, linkStyle: linkStyle);
   }
 }
