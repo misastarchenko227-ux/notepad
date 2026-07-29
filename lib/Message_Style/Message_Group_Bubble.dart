@@ -1,5 +1,7 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:notepad/Data_Base/database.dart';
 import 'package:notepad/Main_Functions/Photo/Full_Screen_Image.dart';
 
@@ -11,7 +13,7 @@ class MessageGroupBubble extends StatelessWidget {
   final List<Message> group;
   final bool isSelectionMode;
   final Set<int> selectedIds;
-  final List<String> allMediaPaths; // общий список для свайпа в полноэкранном режиме
+  final List<String> allMediaPaths;
   final void Function(int messageId) onToggleSelection;
 
   const MessageGroupBubble({
@@ -30,7 +32,6 @@ class MessageGroupBubble extends StatelessWidget {
     final textStyle = TextStyle(fontSize: 16, color: colorScheme.onSurface);
     final linkStyle = textStyle.copyWith(color: Colors.blue, decoration: TextDecoration.underline);
 
-    // Подпись привязана к последнему файлу пакета — так же, как сохраняет addMedia
     final lastParts = group.last.content.split('|');
     final String? caption = lastParts.length > 1 ? lastParts[1] : null;
 
@@ -95,11 +96,7 @@ class MessageGroupBubble extends StatelessWidget {
                         ClipRRect(
                           borderRadius: BorderRadius.circular(8),
                           child: msg.isVideo
-                              ? Container(
-                            color: Colors.black87,
-                            child: const Icon(Icons.play_circle_outline,
-                                color: Colors.white, size: 32),
-                          )
+                              ? _VideoThumbnail(path: path)
                               : Image.file(
                             File(path),
                             fit: BoxFit.cover,
@@ -133,6 +130,65 @@ class MessageGroupBubble extends StatelessWidget {
             right: 20,
             child: Icon(Icons.star, color: Colors.amber, size: 20),
           ),
+      ],
+    );
+  }
+}
+
+/// Достаёт кадр из видеофайла и показывает его как обычную картинку.
+/// Поверх кадра рисуем иконку play, чтобы было понятно, что это видео.
+class _VideoThumbnail extends StatefulWidget {
+  final String path;
+
+  const _VideoThumbnail({required this.path});
+
+  @override
+  State<_VideoThumbnail> createState() => _VideoThumbnailState();
+}
+
+class _VideoThumbnailState extends State<_VideoThumbnail> {
+  Uint8List? _thumbnailBytes;
+
+  @override
+  void initState() {
+    super.initState();
+    _generateThumbnail();
+  }
+
+  Future<void> _generateThumbnail() async {
+    final bytes = await VideoThumbnail.thumbnailData(
+      video: widget.path,
+      imageFormat: ImageFormat.JPEG,
+      maxWidth: 200, // превью маленькое — этого достаточно для сетки
+      quality: 60,
+    );
+    if (mounted) {
+      setState(() => _thumbnailBytes = bytes);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_thumbnailBytes == null) {
+      return Container(
+        color: Colors.black87,
+        child: const Center(
+          child: SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white70),
+          ),
+        ),
+      );
+    }
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Image.memory(_thumbnailBytes!, fit: BoxFit.cover),
+        const Center(
+          child: Icon(Icons.play_circle_fill, color: Colors.white70, size: 32),
+        ),
       ],
     );
   }
