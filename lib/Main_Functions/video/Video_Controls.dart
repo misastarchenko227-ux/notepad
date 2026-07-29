@@ -6,6 +6,10 @@ class VideoControls extends StatelessWidget {
   final VoidCallback onClose;
   final VoidCallback onPlayPause;
   final VoidCallback onReplay;
+  final VoidCallback onToggleOrientation;
+  final VoidCallback onToggleFit;
+  final int orientationMode; // 0: Auto, 1: Landscape Locked, 2: Portrait Locked
+  final bool isCoverFit;
 
   const VideoControls({
     super.key,
@@ -13,9 +17,12 @@ class VideoControls extends StatelessWidget {
     required this.onClose,
     required this.onPlayPause,
     required this.onReplay,
+    required this.onToggleOrientation,
+    required this.onToggleFit,
+    required this.orientationMode,
+    required this.isCoverFit,
   });
 
-  /// Переводит Duration в "мм:сс" (или "ч:мм:сс", если видео больше часа).
   String _formatDuration(Duration d) {
     final hours = d.inHours;
     final minutes = d.inMinutes.remainder(60);
@@ -27,6 +34,18 @@ class VideoControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    IconData orientationIcon;
+    switch (orientationMode) {
+      case 1:
+        orientationIcon = Icons.screen_lock_landscape;
+        break;
+      case 2:
+        orientationIcon = Icons.screen_lock_portrait;
+        break;
+      default:
+        orientationIcon = Icons.screen_rotation;
+    }
+
     return Stack(
       children: [
         Container(color: Colors.black26),
@@ -41,16 +60,28 @@ class VideoControls extends StatelessWidget {
             onPressed: onPlayPause,
           ),
         ),
-        /*Positioned(
-          top: 20,
-          left: 20,
-          child: SafeArea(
-            child: IconButton(
-              icon: const Icon(Icons.close, color: Colors.white, size: 35),
-              onPressed: onClose,
-            ),
+        // Кнопка поворота
+        Positioned(
+          bottom: 90,
+          right: 20,
+          child: IconButton(
+            icon: Icon(orientationIcon, color: Colors.white, size: 30),
+            onPressed: onToggleOrientation,
           ),
-        ),*/
+        ),
+        // Кнопка масштаба (растягивание)
+        Positioned(
+          bottom: 140,
+          right: 20,
+          child: IconButton(
+            icon: Icon(
+              isCoverFit ? Icons.fullscreen_exit : Icons.fullscreen,
+              color: Colors.white,
+              size: 30,
+            ),
+            onPressed: onToggleFit,
+          ),
+        ),
         Positioned(
           bottom: 40,
           left: 20,
@@ -59,8 +90,6 @@ class VideoControls extends StatelessWidget {
             onPressed: onReplay,
           ),
         ),
-        // Таймер "текущее время / общая длительность" — обновляется вместе
-        // с прогрессом воспроизведения, чуть выше индикатора прогресса.
         Positioned(
           bottom: 62,
           left: 20,

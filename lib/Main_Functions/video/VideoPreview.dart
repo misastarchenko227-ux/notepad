@@ -15,13 +15,19 @@ class VideoPreview extends StatefulWidget {
   final int initialPosition;
   final VideoPlayerController? controller;
   final bool isFullScreen;
-  final List<MediaItem>? allMediaItems; // ← было List<String>? allMediaPaths
+  final List<MediaItem>? allMediaItems;
   final int? currentIndex;
   final bool isSelectionMode;
   final VoidCallback? onTapInSelection;
   final VoidCallback? onVideoEnded;
   final bool autoPlay;
   final bool manageOrientation;
+
+  // Новые параметры для синхронизации состояния
+  final int? externalOrientationMode;
+  final bool? externalIsCoverFit;
+  final VoidCallback? onToggleOrientation;
+  final VoidCallback? onToggleFit;
 
   const VideoPreview({
     Key? key,
@@ -30,13 +36,17 @@ class VideoPreview extends StatefulWidget {
     this.initialPosition = 0,
     this.controller,
     this.isFullScreen = false,
-    this.allMediaItems, // ← было allMediaPaths
+    this.allMediaItems,
     this.currentIndex,
     this.isSelectionMode = false,
     this.onTapInSelection,
     this.onVideoEnded,
     this.autoPlay = false,
     this.manageOrientation = true,
+    this.externalOrientationMode,
+    this.externalIsCoverFit,
+    this.onToggleOrientation,
+    this.onToggleFit,
   }) : super(key: key);
 
   @override
@@ -51,6 +61,13 @@ class _VideoPreviewState extends State<VideoPreview> {
   bool _showSeekAnim = false;
   bool _seekLeft = false;
   bool _endedFired = false;
+  
+  // Внутреннее состояние (используется вне Full_Screen_Image)
+  int _internalOrientationMode = 0;
+  bool _internalIsCoverFit = false;
+
+  int get _currentOrientationMode => widget.externalOrientationMode ?? _internalOrientationMode;
+  bool get _currentIsCoverFit => widget.externalIsCoverFit ?? _internalIsCoverFit;
 
   @override
   void initState() {
@@ -76,11 +93,51 @@ class _VideoPreviewState extends State<VideoPreview> {
     _controller.addListener(_handleVideoEnd);
 
     if (widget.isFullScreen && widget.manageOrientation) {
+      _setFreeOrientation();
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    }
+  }
+
+  void _setFreeOrientation() {
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
+  }
+
+  void _toggleOrientation() {
+    if (widget.onToggleOrientation != null) {
+      widget.onToggleOrientation!();
+    } else {
+      setState(() {
+        _internalOrientationMode = (_internalOrientationMode + 1) % 3;
+        _applyInternalOrientation();
+      });
+    }
+  }
+
+  void _applyInternalOrientation() {
+    if (_internalOrientationMode == 0) {
+      _setFreeOrientation();
+    } else if (_internalOrientationMode == 1) {
       SystemChrome.setPreferredOrientations([
         DeviceOrientation.landscapeLeft,
         DeviceOrientation.landscapeRight,
       ]);
-      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    } else {
+      SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+    }
+  }
+
+  void _toggleFit() {
+    if (widget.onToggleFit != null) {
+      widget.onToggleFit!();
+    } else {
+      setState(() {
+        _internalIsCoverFit = !_internalIsCoverFit;
+      });
     }
   }
 
@@ -172,6 +229,10 @@ class _VideoPreviewState extends State<VideoPreview> {
           _savePosition();
         }),
         onReplay: () => _controller.seekTo(Duration.zero),
+        onToggleOrientation: _toggleOrientation,
+        onToggleFit: _toggleFit,
+        orientationMode: _currentOrientationMode,
+        isCoverFit: _currentIsCoverFit,
       );
     }
 
@@ -191,7 +252,7 @@ class _VideoPreviewState extends State<VideoPreview> {
                   context,
                   MaterialPageRoute(
                     builder: (context) => Full_Screen_Image(
-                      items: widget.allMediaItems!, // ← было paths
+                      items: widget.allMediaItems!,
                       initialIndex: widget.currentIndex!,
                     ),
                   ),
@@ -232,7 +293,7 @@ class _VideoPreviewState extends State<VideoPreview> {
                       context,
                       MaterialPageRoute(
                         builder: (context) => Full_Screen_Image(
-                          items: widget.allMediaItems!, // ← было paths
+                          items: widget.allMediaItems!,
                           initialIndex: widget.currentIndex!,
                         ),
                       ),

@@ -14,6 +14,10 @@ class VideoFullscreenView extends StatelessWidget {
   final VoidCallback onClose;
   final VoidCallback onPlayPause;
   final VoidCallback onReplay;
+  final VoidCallback onToggleOrientation;
+  final VoidCallback onToggleFit;
+  final int orientationMode;
+  final bool isCoverFit;
 
   const VideoFullscreenView({
     super.key,
@@ -27,19 +31,34 @@ class VideoFullscreenView extends StatelessWidget {
     required this.onClose,
     required this.onPlayPause,
     required this.onReplay,
+    required this.onToggleOrientation,
+    required this.onToggleFit,
+    required this.orientationMode,
+    required this.isCoverFit,
   });
 
   Widget _buildVideo(BuildContext context) {
     return InteractiveViewer(
       clipBehavior: Clip.none,
-      minScale: 1.0,      // исходный размер
-      maxScale: 5.0,      // максимальный зум
-      panEnabled: true,  // ← запрещаем перемещение, только зум
+      minScale: 1.0,
+      maxScale: 5.0,
+      panEnabled: true,
       child: Center(
-        child: AspectRatio(
-          aspectRatio: controller.value.aspectRatio,
-          child: VideoPlayer(controller),
-        ),
+        child: isCoverFit
+            ? SizedBox.expand(
+                child: FittedBox(
+                  fit: BoxFit.cover,
+                  child: SizedBox(
+                    width: controller.value.size.width,
+                    height: controller.value.size.height,
+                    child: VideoPlayer(controller),
+                  ),
+                ),
+              )
+            : AspectRatio(
+                aspectRatio: controller.value.aspectRatio,
+                child: VideoPlayer(controller),
+              ),
       ),
     );
   }
@@ -60,6 +79,10 @@ class VideoFullscreenView extends StatelessWidget {
                 onClose: onClose,
                 onPlayPause: onPlayPause,
                 onReplay: onReplay,
+                onToggleOrientation: onToggleOrientation,
+                onToggleFit: onToggleFit,
+                orientationMode: orientationMode,
+                isCoverFit: isCoverFit,
               ),
             if (showSeekAnim)
               VideoSeekOverlay(
