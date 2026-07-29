@@ -17,6 +17,9 @@ class VideoPreview extends StatefulWidget {
   final int? currentIndex;
   final bool isSelectionMode;
   final VoidCallback? onTapInSelection;
+  final VoidCallback? onVideoEnded;
+  final bool autoPlay;
+  final bool manageOrientation; // ← новое: false, если ориентацию контролирует родитель (Full_Screen_Image)
 
   const VideoPreview({
     Key? key,
@@ -29,6 +32,9 @@ class VideoPreview extends StatefulWidget {
     this.currentIndex,
     this.isSelectionMode = false,
     this.onTapInSelection,
+    this.onVideoEnded,
+    this.autoPlay = false,
+    this.manageOrientation = true, // ← новое: по умолчанию управляет сам (для отдельной кнопки fullscreen)
   }) : super(key: key);
 
   @override
@@ -42,6 +48,7 @@ class _VideoPreviewState extends State<VideoPreview> {
   String? _seekLabel;
   bool _showSeekAnim = false;
   bool _seekLeft = false;
+  bool _endedFired = false;
 
   @override
   void initState() {
@@ -55,16 +62,38 @@ class _VideoPreviewState extends State<VideoPreview> {
           if (widget.initialPosition > 0) {
             _controller.seekTo(Duration(seconds: widget.initialPosition));
           }
-          if (mounted) setState(() => _initialized = true);
+          if (mounted) {
+            setState(() => _initialized = true);
+            if (widget.autoPlay) {
+              _controller.play();
+            }
+          }
         });
     }
     _controller.addListener(_handlePlaybackChange);
-    if (widget.isFullScreen) {
+    _controller.addListener(_handleVideoEnd);
+
+    // Ориентацию задаём только если сами за неё отвечаем — когда виджет
+    // используется внутри Full_Screen_Image, там за это отвечает родитель,
+    // и лишний вызов здесь приводил к конфликту при быстром свайпе.
+    if (widget.isFullScreen && widget.manageOrientation) {
       SystemChrome.setPreferredOrientations([
         DeviceOrientation.landscapeLeft,
         DeviceOrientation.landscapeRight,
       ]);
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    }
+  }
+
+  void _handleVideoEnd() {
+    if (_endedFired) return;
+    final value = _controller.value;
+    if (!value.isInitialized || value.duration == Duration.zero) return;
+
+    final bool reachedEnd = value.position >= value.duration && !value.isPlaying;
+    if (reachedEnd) {
+      _endedFired = true;
+      widget.onVideoEnded?.call();
     }
   }
 
@@ -109,12 +138,25 @@ class _VideoPreviewState extends State<VideoPreview> {
   @override
   void dispose() {
     _controller.removeListener(_handlePlaybackChange);
+    _controller.removeListener(_handleVideoEnd);
     WakelockPlus.disable();
     _savePosition();
-    if (!widget.isFullScreen && widget.controller == null) {
+
+    // Останавливаем воспроизведение сразу, не дожидаясь фактического
+    // освобождения ресурсов — иначе звук/видео может доиграть на долю
+    // секунды дольше, чем виден сам виджет.
+    _controller.pause();
+
+    // Раньше здесь стояло "!widget.isFullScreen && widget.controller == null" —
+    // из-за этого контроллер, созданный самим виджетом (widget.controller == null),
+    // не освобождался, если isFullScreen был true, и видео продолжало играть
+    // в фоне после ухода со страницы. Единственное, что реально важно проверять —
+    // наш ли это контроллер (widget.controller == null), а не режим отображения.
+    if (widget.controller == null) {
       _controller.dispose();
     }
-    if (widget.isFullScreen) {
+
+    if (widget.isFullScreen && widget.manageOrientation) {
       SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     }
@@ -154,7 +196,7 @@ class _VideoPreviewState extends State<VideoPreview> {
                 widget.onTapInSelection?.call();
               } else if (widget.allMediaPaths != null && widget.currentIndex != null) {
                 _savePosition();
-                _controller.pause(); // Исправление: останавливаем видео перед переходом
+                _controller.pause();
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -194,7 +236,7 @@ class _VideoPreviewState extends State<VideoPreview> {
                 icon: const Icon(Icons.fullscreen, color: Colors.white70),
                 onPressed: () {
                   _savePosition();
-                  _controller.pause(); // Исправление: останавливаем видео перед переходом
+                  _controller.pause();
                   if (widget.allMediaPaths != null && widget.currentIndex != null) {
                     Navigator.push(
                       context,

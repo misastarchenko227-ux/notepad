@@ -15,6 +15,16 @@ class VideoControls extends StatelessWidget {
     required this.onReplay,
   });
 
+  /// Переводит Duration в "мм:сс" (или "ч:мм:сс", если видео больше часа).
+  String _formatDuration(Duration d) {
+    final hours = d.inHours;
+    final minutes = d.inMinutes.remainder(60);
+    final seconds = d.inSeconds.remainder(60);
+    final mm = minutes.toString().padLeft(2, '0');
+    final ss = seconds.toString().padLeft(2, '0');
+    return hours > 0 ? '$hours:$mm:$ss' : '$mm:$ss';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Stack(
@@ -31,7 +41,7 @@ class VideoControls extends StatelessWidget {
             onPressed: onPlayPause,
           ),
         ),
-        Positioned(
+        /*Positioned(
           top: 20,
           left: 20,
           child: SafeArea(
@@ -40,13 +50,36 @@ class VideoControls extends StatelessWidget {
               onPressed: onClose,
             ),
           ),
-        ),
+        ),*/
         Positioned(
           bottom: 40,
           left: 20,
           child: IconButton(
             icon: const Icon(Icons.replay, color: Colors.white, size: 30),
             onPressed: onReplay,
+          ),
+        ),
+        // Таймер "текущее время / общая длительность" — обновляется вместе
+        // с прогрессом воспроизведения, чуть выше индикатора прогресса.
+        Positioned(
+          bottom: 62,
+          left: 20,
+          right: 20,
+          child: AnimatedBuilder(
+            animation: controller,
+            builder: (context, child) {
+              final position = controller.value.position;
+              final duration = controller.value.duration;
+              return Text(
+                '${_formatDuration(position)} / ${_formatDuration(duration)}',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  shadows: [Shadow(blurRadius: 4, color: Colors.black87)],
+                ),
+              );
+            },
           ),
         ),
         Positioned(
