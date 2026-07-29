@@ -298,17 +298,26 @@ class NoteDetailsController {
     final int? groupId =
     assets.length > 1 ? DateTime.now().millisecondsSinceEpoch : null;
 
+    final Directory appDocDir = await getApplicationDocumentsDirectory();
+    final String mediaDirPath = '${appDocDir.path}/media';
+    await Directory(mediaDirPath).create(recursive: true);
+
     for (var i = 0; i < assets.length; i++) {
       final asset = assets[i];
       final File? file = await asset.file; // достаём реальный путь на диске
       if (file == null) continue;
 
+      // Копируем файл во внутреннюю память приложения, чтобы он не зависел от галереи
+      final String fileName = '${DateTime.now().millisecondsSinceEpoch}_${i}_${file.path.split('/').last.split('\\').last}';
+      final String newPath = '$mediaDirPath/$fileName';
+      final File copiedFile = await file.copy(newPath);
+
       final isVideo = asset.type == AssetType.video;
       final isLast = i == assets.length - 1;
 
       final content = (isLast && commentController.text.isNotEmpty)
-          ? "${file.path}|${commentController.text}"
-          : file.path;
+          ? "${copiedFile.path}|${commentController.text}"
+          : copiedFile.path;
 
       await database.addMessage(noteId, content, isVideo, groupId: groupId);
     }
