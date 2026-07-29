@@ -223,6 +223,7 @@ class NoteDetailsController {
         themeColor: Colors.blue,
         // светлая тема гарантированно, независимо от устройства
         pickerTheme: null,
+        dragToSelect: false,
       ),
     );
 
