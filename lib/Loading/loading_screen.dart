@@ -76,6 +76,7 @@ class _UnicoreLoadingScreenState extends State<UnicoreLoadingScreen> {
 
   void _navigateToMain() {
     if (!mounted) return;
+    database.markOnboardingSeen(); // ← новое: запоминаем, что онбординг уже показан
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (_) => const MyNotesPage()),

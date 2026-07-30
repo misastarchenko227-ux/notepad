@@ -9,21 +9,24 @@ import 'package:provider/provider.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   database = AppDatabase();
+
+  bool dbOk = true;
   try {
     await database.select(database.notes).get();
   } catch (e) {
-    ScaffoldMessenger.of(context as BuildContext).showSnackBar(
-      SnackBar(
-        content: Text("Ошибка БД: $e"),
-        backgroundColor: Colors.red,
-        duration: const Duration(seconds: 20),
-      ),
-    );
+    dbOk = false;
+    debugPrint("Ошибка БД: $e"); // ← было: попытка показать SnackBar через несуществующий context
   }
+
+  final bool hasSeenOnboarding = await database.hasSeenOnboarding(); // ← новое
+
   runApp(
     ChangeNotifierProvider(
       create: (_) => ThemeSettings(),
-      child: const MyApp(),
+      child: MyApp(
+        showOnboarding: !hasSeenOnboarding, // ← новое
+        dbErrorOccurred: !dbOk, // ← новое: передаём дальше, чтобы показать ошибку уже внутри дерева виджетов
+      ),
     ),
   );
 }
@@ -52,7 +55,14 @@ class ThemeSettings extends ChangeNotifier {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final bool showOnboarding; // ← новое
+  final bool dbErrorOccurred; // ← новое
+
+  const MyApp({
+    super.key,
+    required this.showOnboarding, // ← новое
+    this.dbErrorOccurred = false, // ← новое
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -68,7 +78,25 @@ class MyApp extends StatelessWidget {
       ),
       darkTheme: ThemeData(useMaterial3: true, brightness: Brightness.dark),
       themeMode: themeSettings.currentMode,
-      home: const UnicoreLoadingScreen(),
+      home: showOnboarding
+          ? const UnicoreLoadingScreen() // ← первый запуск — показываем онбординг
+          : const MyNotesPage(), // ← повторный запуск — сразу главный экран
+      builder: (context, child) {
+        // Ошибку БД показываем уже здесь — SnackBar требует контекст
+        // внутри дерева MaterialApp, а не сырой контекст main().
+        if (dbErrorOccurred) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text("Ошибка БД"),
+                backgroundColor: Colors.red,
+                duration: Duration(seconds: 20),
+              ),
+            );
+          });
+        }
+        return child!;
+      },
     );
   }
 }

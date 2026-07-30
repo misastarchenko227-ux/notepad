@@ -105,7 +105,21 @@ class AppDatabase extends _$AppDatabase {
     if (row == null) return false;
     return row.value == 'true';
   }
+  Future<bool> hasSeenOnboarding() async {
+    final row = await (select(settings)..where((t) => t.key.equals('has_seen_onboarding')))
+        .getSingleOrNull();
+    if (row == null) return false;
+    return row.value == 'true';
+  }
 
+  Future<void> markOnboardingSeen() async {
+    await into(settings).insertOnConflictUpdate(
+      SettingsCompanion.insert(
+        key: 'has_seen_onboarding',
+        value: 'true',
+      ),
+    );
+  }
   Future<void> saveTheme(bool isDark) async {
     await into(settings).insertOnConflictUpdate(
       SettingsCompanion.insert(
