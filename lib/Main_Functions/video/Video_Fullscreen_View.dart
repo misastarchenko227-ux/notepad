@@ -1,3 +1,4 @@
+import 'dart:ui'; // ← новый импорт, нужен для ImageFilter.blur
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'video_controls.dart';
@@ -37,28 +38,27 @@ class VideoFullscreenView extends StatelessWidget {
     required this.isCoverFit,
   });
 
+  /// Как в Telegram: размытая увеличенная копия кадра занимает весь экран
+  /// фоном, а поверх неё — настоящее видео без обрезки и без искажений,
+  /// по центру. isCoverFit/onToggleFit пока оставлены нетронутыми в
+  /// сигнатуре (чтобы не сломать VideoControls и вызывающий код), но
+  /// сейчас не используются — можно убрать в отдельной правке.
   Widget _buildVideo(BuildContext context) {
     return InteractiveViewer(
       clipBehavior: Clip.none,
       minScale: 1.0,
       maxScale: 5.0,
       panEnabled: true,
-      child: Center(
-        child: isCoverFit
-            ? SizedBox.expand(
-                child: FittedBox(
-                  fit: BoxFit.cover,
-                  child: SizedBox(
-                    width: controller.value.size.width,
-                    height: controller.value.size.height,
-                    child: VideoPlayer(controller),
-                  ),
-                ),
-              )
-            : AspectRatio(
-                aspectRatio: controller.value.aspectRatio,
-                child: VideoPlayer(controller),
-              ),
+      child: SizedBox.expand(
+        child: FittedBox(
+          fit: BoxFit.cover,
+          alignment: const Alignment(0.0, 0.9), // ← новое: показываем больше нижней части кадра
+          child: SizedBox(
+            width: controller.value.size.width,
+            height: controller.value.size.height,
+            child: VideoPlayer(controller),
+          ),
+        ),
       ),
     );
   }

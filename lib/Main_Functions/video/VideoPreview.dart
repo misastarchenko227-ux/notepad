@@ -64,7 +64,7 @@ class _VideoPreviewState extends State<VideoPreview> {
   
   // Внутреннее состояние (используется вне Full_Screen_Image)
   int _internalOrientationMode = 0;
-  bool _internalIsCoverFit = false;
+  bool _internalIsCoverFit = true;
 
   int get _currentOrientationMode => widget.externalOrientationMode ?? _internalOrientationMode;
   bool get _currentIsCoverFit => widget.externalIsCoverFit ?? _internalIsCoverFit;

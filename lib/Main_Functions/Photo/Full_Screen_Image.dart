@@ -26,7 +26,7 @@ class _Full_Screen_ImageState extends State<Full_Screen_Image> {
 
   // Состояние теперь хранится здесь и не сбрасывается при свайпах
   int _orientationMode = 0; // 0: Auto, 1: Landscape, 2: Portrait
-  bool _isCoverFit = false;
+  bool _isCoverFit = true;
 
   @override
   void initState() {
@@ -97,10 +97,16 @@ class _Full_Screen_ImageState extends State<Full_Screen_Image> {
   }
 
   @override
+  @override
   Widget build(BuildContext context) {
+    final bool currentIsVideo = _isVideo(widget.items[_currentIndex].path);
+
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(
+      extendBodyBehindAppBar: true, // ← новое: контент уходит под AppBar
+      appBar: currentIsVideo
+          ? null // ← на видео-страницах AppBar убираем совсем
+          : AppBar(
         backgroundColor: Colors.black,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
@@ -109,53 +115,70 @@ class _Full_Screen_ImageState extends State<Full_Screen_Image> {
           style: const TextStyle(color: Colors.white),
         ),
       ),
-      body: PageView.builder(
-        controller: _pageController,
-        physics: const BouncingScrollPhysics(),
-        itemCount: widget.items.length,
-        onPageChanged: (index) {
-          setState(() {
-            _currentIndex = index;
-            if (index != _autoPlayIndex) {
-              _autoPlayIndex = null;
-            }
-          });
-          _applyCurrentOrientation();
-        },
-        itemBuilder: (context, index) {
-          final item = widget.items[index];
+      body: Stack(
+        children: [
+          PageView.builder(
+            controller: _pageController,
+            physics: const BouncingScrollPhysics(),
+            itemCount: widget.items.length,
+            onPageChanged: (index) {
+              setState(() {
+                _currentIndex = index;
+                if (index != _autoPlayIndex) {
+                  _autoPlayIndex = null;
+                }
+              });
+              _applyCurrentOrientation();
+            },
+            itemBuilder: (context, index) {
+              final item = widget.items[index];
 
-          if (_isVideo(item.path)) {
-            return VideoPreview(
-              msgId: item.msgId,
-              videoPath: item.path,
-              initialPosition: item.initialPosition,
-              isFullScreen: true,
-              onVideoEnded: _goToNextIfAvailable,
-              autoPlay: index == _autoPlayIndex,
-              manageOrientation: false,
-              externalOrientationMode: _orientationMode,
-              externalIsCoverFit: _isCoverFit,
-              onToggleOrientation: _toggleOrientation,
-              onToggleFit: _toggleFit,
-            );
-          }
+              if (_isVideo(item.path)) {
+                return VideoPreview(
+                  msgId: item.msgId,
+                  videoPath: item.path,
+                  initialPosition: item.initialPosition,
+                  isFullScreen: true,
+                  onVideoEnded: _goToNextIfAvailable,
+                  autoPlay: index == _autoPlayIndex,
+                  manageOrientation: false,
+                  externalOrientationMode: _orientationMode,
+                  externalIsCoverFit: _isCoverFit,
+                  onToggleOrientation: _toggleOrientation,
+                  onToggleFit: _toggleFit,
+                );
+              }
 
-          return InteractiveViewer(
-            minScale: 1.0,
-            maxScale: 5.0,
-            child: Center(
-              child: Image.file(
-                File(item.path),
-                errorBuilder: (context, error, stackTrace) => const Icon(
-                  Icons.broken_image,
-                  color: Colors.white54,
-                  size: 50,
+              return InteractiveViewer(
+                minScale: 1.0,
+                maxScale: 5.0,
+                child: Center(
+                  child: Image.file(
+                    File(item.path),
+                    errorBuilder: (context, error, stackTrace) => const Icon(
+                      Icons.broken_image,
+                      color: Colors.white54,
+                      size: 50,
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+          // Кнопка "назад" поверх видео — AppBar на видео-страницах убран,
+          // но выйти с экрана всё равно нужно.
+          if (currentIsVideo)
+            Positioned(
+              top: 0,
+              left: 0,
+              child: SafeArea(
+                child: IconButton(
+                  icon: const Icon(Icons.arrow_back, color: Colors.white),
+                  onPressed: () => Navigator.pop(context),
                 ),
               ),
             ),
-          );
-        },
+        ],
       ),
     );
   }
